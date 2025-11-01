@@ -1,206 +1,135 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Crypto Auto Trading Bot</title>
-
-  <!-- Lightweight Charts CDN -->
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-
+  <meta charset="UTF-8">
+  <title>XRP/USDT Auto Trading Bot</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background:#f7f8fb; color:#222; }
-    #container { display:flex; gap:20px; }
-    #left { flex:1; min-width:520px; }
-    #right { width:360px; }
-    #chart { height: 480px; background:#fff; border:1px solid #ddd; }
-    select, input, button { width:100%; margin:8px 0; padding:8px; font-size:14px; }
-    button { cursor:pointer; border:none; background:#1976d2; color:#fff; }
-    button.secondary { background:#666; }
-    pre { background:#fff; border:1px solid #ddd; padding:10px; height:240px; overflow:auto; }
-    .stat { background:#fff; border:1px solid #ddd; padding:8px; margin-bottom:8px; }
-    .small { font-size:13px; color:#555; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f8fb;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      color: #222;
+    }
+    #chart {
+      height: 500px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+    }
+    .controls {
+      max-width: 400px;
+    }
+    label {
+      display: block;
+      margin-top: 8px;
+    }
+    input, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #1976d2;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #125ea3;
+    }
+    pre {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 180px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
-  <h2>Auto Trading Bot — Live Chart + Trade</h2>
-  <div id="container">
-    <div id="left">
-      <div id="chart"></div>
-    </div>
 
-    <div id="right">
-      <div class="stat">
-        <label for="symbols">Symbol</label>
-        <select id="symbols"></select>
-        <div class="small">Chart timeframe: 1 minute (kline_1m). Choose symbol and click "Load Chart".</div>
-        <button id="loadChart">Load Chart</button>
-      </div>
+  <h2>XRP/USDT Auto Trading Bot</h2>
 
-      <div class="stat">
-        <label for="budget">Budget (USDT)</label>
-        <input id="budget" type="number" value="10" step="0.1" />
-        <label for="sl">Stop-loss (%)</label>
-        <input id="sl" type="number" value="5" step="0.1" />
-        <label for="tp">Take-profit (%)</label>
-        <input id="tp" type="number" value="20" step="0.1" />
-        <button id="start" style="margin-top:8px">Start Auto Trade</button>
-        <button id="stop" class="secondary">Stop Bot</button>
-      </div>
+  <!-- TradingView Chart -->
+  <div id="chart"></div>
 
-      <div class="stat">
-        <strong>Status</strong>
-        <div id="status">idle</div>
-      </div>
+  <!-- Controls -->
+  <div class="controls">
+    <label>Symbol</label>
+    <input type="text" id="symbol" value="XRPUSDT" readonly>
 
-      <div class="stat">
-        <strong>Logs</strong>
-        <pre id="log">No trades yet.</pre>
-      </div>
-    </div>
+    <label>Budget (USDT)</label>
+    <input type="number" id="budget" value="10">
+
+    <label>Stop Loss (%)</label>
+    <input type="number" id="stop" value="5">
+
+    <label>Take Profit (%)</label>
+    <input type="number" id="profit" value="20">
+
+    <button id="start">Start Live Trade</button>
+    <button id="stopBtn" style="background:#666;">Stop Bot</button>
   </div>
 
+  <h3>Logs:</h3>
+  <pre id="log">Waiting...</pre>
+
+  <!-- TradingView Widget Script -->
+  <script src="https://s3.tradingview.com/tv.js"></script>
   <script>
-    const BINANCE_WSS = 'wss://stream.binance.com:9443/ws';
-    const DEFAULT_SYMBOLS = [
-      { symbol: 'XRPUSDT', label: 'XRP/USDT' },
-      { symbol: 'BTCUSDT', label: 'BTC/USDT' }
-    ];
-
-    const sel = document.getElementById('symbols');
-    const loadChartBtn = document.getElementById('loadChart');
-    const budgetInput = document.getElementById('budget');
-    const startBtn = document.getElementById('start');
-    const stopBtn = document.getElementById('stop');
-    const statusEl = document.getElementById('status');
-    const logEl = document.getElementById('log');
-
-    // Chart setup
-    const chartContainer = document.getElementById('chart');
-    const chart = LightweightCharts.createChart(chartContainer, {
-      width: chartContainer.clientWidth,
-      height: 480,
-      layout: { backgroundColor: '#ffffff', textColor: '#111' },
-      grid: { vertLines: { color: '#eee' }, horzLines: { color: '#eee' } },
-      rightPriceScale: { visible: true }
-    });
-    const candleSeries = chart.addCandlestickSeries();
-    window.addEventListener('resize', () => {
-      chart.applyOptions({ width: chartContainer.clientWidth });
+    // Initialize TradingView Chart
+    new TradingView.widget({
+      autosize: true,
+      symbol: "BINANCE:XRPUSDT",
+      interval: "1",
+      timezone: "Etc/UTC",
+      theme: "light",
+      style: "1",
+      locale: "en",
+      toolbar_bg: "#f1f3f6",
+      enable_publishing: false,
+      allow_symbol_change: false,
+      container_id: "chart"
     });
 
+    // Log function
     function log(msg) {
-      const time = new Date().toLocaleTimeString();
-      logEl.textContent = `[${time}] ${msg}\n` + logEl.textContent;
+      const t = new Date().toLocaleTimeString();
+      document.getElementById('log').textContent = `[${t}] ${msg}\n` + document.getElementById('log').textContent;
     }
 
-    async function loadSymbols() {
-      sel.innerHTML = '';
-      // Always add XRP and BTC
-      DEFAULT_SYMBOLS.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.symbol;
-        opt.textContent = s.label;
-        sel.appendChild(opt);
-      });
+    // Start Trade
+    document.getElementById('start').addEventListener('click', async () => {
+      const symbol = document.getElementById('symbol').value;
+      const budget = parseFloat(document.getElementById('budget').value);
+      const stop = parseFloat(document.getElementById('stop').value);
+      const profit = parseFloat(document.getElementById('profit').value);
 
-      // Try loading more from backend
-      try {
-        const r = await fetch('/symbols');
-        const data = await r.json();
-        data.forEach(s => {
-          if (!DEFAULT_SYMBOLS.find(d => d.symbol === s.symbol)) {
-            const opt = document.createElement('option');
-            opt.value = s.symbol;
-            opt.textContent = `${s.symbol} (${s.base}/${s.quote})`;
-            sel.appendChild(opt);
-          }
-        });
-      } catch (err) {
-        log('Could not load extra symbols: ' + err.message);
-      }
-    }
-
-    let ws = null;
-    let klineInterval = '1m';
-    function startKlineStream(symbol) {
-      if (ws) ws.close();
-      const streamName = `${symbol.toLowerCase()}@kline_${klineInterval}`;
-      const url = `${BINANCE_WSS}/${streamName}`;
-      ws = new WebSocket(url);
-      ws.onopen = () => { statusEl.textContent = `Streaming ${symbol}`; };
-      ws.onmessage = (evt) => {
-        const data = JSON.parse(evt.data);
-        const k = data.k;
-        const candlestick = {
-          time: Math.floor(k.t / 1000),
-          open: parseFloat(k.o),
-          high: parseFloat(k.h),
-          low: parseFloat(k.l),
-          close: parseFloat(k.c),
-        };
-        candleSeries.update(candlestick);
-      };
-      ws.onclose = () => { statusEl.textContent = 'idle'; };
-    }
-
-    async function fetchHistorical(symbol) {
-      try {
-        const resp = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${klineInterval}&limit=100`);
-        const arr = await resp.json();
-        return arr.map(a => ({
-          time: Math.floor(a[0] / 1000),
-          open: parseFloat(a[1]),
-          high: parseFloat(a[2]),
-          low: parseFloat(a[3]),
-          close: parseFloat(a[4])
-        }));
-      } catch (err) {
-        log('Error loading candles: ' + err.message);
-        return [];
-      }
-    }
-
-    loadChartBtn.addEventListener('click', async () => {
-      const symbol = sel.value;
-      candleSeries.setData([]);
-      const bars = await fetchHistorical(symbol);
-      if (bars.length) candleSeries.setData(bars);
-      startKlineStream(symbol);
-    });
-
-    startBtn.addEventListener('click', async () => {
-      const symbol = sel.value;
-      const budgetUSDT = parseFloat(budgetInput.value);
-      const stopPercent = parseFloat(document.getElementById('sl').value);
-      const takeProfitPercent = parseFloat(document.getElementById('tp').value);
-      statusEl.textContent = 'starting trade...';
-      log(`Requesting backend to trade ${symbol}`);
-
+      log(`Starting trade on ${symbol}...`);
       try {
         const res = await fetch('/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol, budgetUSDT, stopPercent, takeProfitPercent })
+          body: JSON.stringify({ symbol, budget, stop, profit })
         });
         const data = await res.json();
-        log('Trade response: ' + JSON.stringify(data));
-        statusEl.textContent = 'running';
+        log(`Trade started: ${JSON.stringify(data)}`);
       } catch (err) {
-        log('Trade error: ' + err.message);
-        statusEl.textContent = 'error';
+        log('Error starting trade: ' + err.message);
       }
     });
 
-    stopBtn.addEventListener('click', async () => {
-      await fetch('/stop', { method: 'POST' });
-      statusEl.textContent = 'stopped';
-      log('Bot stopped.');
-    });
-
-    loadSymbols();
-    window.addEventListener('load', () => {
-      sel.value = 'XRPUSDT';
-      loadChartBtn.click();
+    // Stop Trade
+    document.getElementById('stopBtn').addEventListener('click', async () => {
+      try {
+        await fetch('/stop', { method: 'POST' });
+        log('Bot stopped.');
+      } catch (err) {
+        log('Error stopping bot: ' + err.message);
+      }
     });
   </script>
 </body>

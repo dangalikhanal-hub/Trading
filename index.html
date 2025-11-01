@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Auto Trading Bot with Live Chart</title>
+  <title>Crypto Auto Trading Bot</title>
 
   <!-- Lightweight Charts CDN -->
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
@@ -32,7 +32,7 @@
       <div class="stat">
         <label for="symbols">Symbol</label>
         <select id="symbols"></select>
-        <div class="small">Chart timeframe: 1 minute (kline_1m). Change in dropdown then click "Load Chart".</div>
+        <div class="small">Chart timeframe: 1 minute (kline_1m). Choose symbol and click "Load Chart".</div>
         <button id="loadChart">Load Chart</button>
       </div>
 
@@ -53,23 +53,19 @@
       </div>
 
       <div class="stat">
-        <strong>Position / Logs</strong>
+        <strong>Logs</strong>
         <pre id="log">No trades yet.</pre>
       </div>
     </div>
   </div>
 
   <script>
-    // --- CONFIG ---
-    // Public Binance websocket base for mainnet:
     const BINANCE_WSS = 'wss://stream.binance.com:9443/ws';
-    // For testnet market data use: 'wss://testnet.binance.vision/ws' (uncomment if using testnet market data)
-    // const BINANCE_WSS = 'wss://testnet.binance.vision/ws';
+    const DEFAULT_SYMBOLS = [
+      { symbol: 'XRPUSDT', label: 'XRP/USDT' },
+      { symbol: 'BTCUSDT', label: 'BTC/USDT' }
+    ];
 
-    // default symbol to include (XRP)
-    const DEFAULT_SYMBOL = 'XRPUSDT';
-
-    // --- UI refs ---
     const sel = document.getElementById('symbols');
     const loadChartBtn = document.getElementById('loadChart');
     const budgetInput = document.getElementById('budget');
@@ -78,9 +74,8 @@
     const statusEl = document.getElementById('status');
     const logEl = document.getElementById('log');
 
-    // --- Chart setup (lightweight-charts) ---
+    // Chart setup
     const chartContainer = document.getElementById('chart');
-    chartContainer.innerHTML = '';
     const chart = LightweightCharts.createChart(chartContainer, {
       width: chartContainer.clientWidth,
       height: 480,
@@ -89,198 +84,122 @@
       rightPriceScale: { visible: true }
     });
     const candleSeries = chart.addCandlestickSeries();
-
-    // Resize handling
     window.addEventListener('resize', () => {
       chart.applyOptions({ width: chartContainer.clientWidth });
     });
 
-    // --- Helper: log ---
-    function log(msg, replace=false) {
+    function log(msg) {
       const time = new Date().toLocaleTimeString();
-      if (replace) {
-        logEl.textContent = `[${time}] ${msg}\n` + logEl.textContent;
-      } else {
-        logEl.textContent = `[${time}] ${msg}\n` + logEl.textContent;
-      }
+      logEl.textContent = `[${time}] ${msg}\n` + logEl.textContent;
     }
 
-    // --- Load available symbols from backend, but always add XRPUSDT first ---
     async function loadSymbols() {
       sel.innerHTML = '';
-      const x = document.createElement('option');
-      x.value = DEFAULT_SYMBOL;
-      x.textContent = DEFAULT_SYMBOL + ' (XRP/USDT)';
-      sel.appendChild(x);
+      // Always add XRP and BTC
+      DEFAULT_SYMBOLS.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.symbol;
+        opt.textContent = s.label;
+        sel.appendChild(opt);
+      });
 
+      // Try loading more from backend
       try {
-        const r = await fetch('/symbols'); // expects your backend to expose /symbols
+        const r = await fetch('/symbols');
         const data = await r.json();
         data.forEach(s => {
-          if (s.symbol !== DEFAULT_SYMBOL) {
-            const o = document.createElement('option');
-            o.value = s.symbol;
-            o.textContent = s.symbol + ' (' + s.base + '/' + s.quote + ')';
-            sel.appendChild(o);
+          if (!DEFAULT_SYMBOLS.find(d => d.symbol === s.symbol)) {
+            const opt = document.createElement('option');
+            opt.value = s.symbol;
+            opt.textContent = `${s.symbol} (${s.base}/${s.quote})`;
+            sel.appendChild(opt);
           }
         });
       } catch (err) {
-        log('Could not load symbols from backend: ' + err.message);
+        log('Could not load extra symbols: ' + err.message);
       }
     }
 
-    // --- Live kline via Binance websocket ---
     let ws = null;
-    let currentSymbol = DEFAULT_SYMBOL.toLowerCase(); // e.g. xrpusdt
-    let klineInterval = '1m'; // use 1 minute klines
-    let lastKline = null;
-
+    let klineInterval = '1m';
     function startKlineStream(symbol) {
-      stopKlineStream();
-      currentSymbol = symbol.toLowerCase();
-      const streamName = `${currentSymbol}@kline_${klineInterval}`;
-      const wssUrl = `${BINANCE_WSS}/${streamName}`;
-      ws = new WebSocket(wssUrl);
-
-      ws.onopen = () => {
-        log(`Connected to ${streamName}`, true);
-        statusEl.textContent = 'chart streaming';
-      };
-
+      if (ws) ws.close();
+      const streamName = `${symbol.toLowerCase()}@kline_${klineInterval}`;
+      const url = `${BINANCE_WSS}/${streamName}`;
+      ws = new WebSocket(url);
+      ws.onopen = () => { statusEl.textContent = `Streaming ${symbol}`; };
       ws.onmessage = (evt) => {
-        try {
-          const data = JSON.parse(evt.data);
-          // kline object:
-          const k = data.k;
-          const candlestick = {
-            time: Math.floor(k.t / 1000),
-            open: parseFloat(k.o),
-            high: parseFloat(k.h),
-            low: parseFloat(k.l),
-            close: parseFloat(k.c),
-          };
-          lastKline = candlestick;
-
-          // upsert or update last bar
-          candleSeries.update(candlestick);
-          // if k.x === true -> kline closed, we may want to do decisions on close
-          if (k.x) {
-            // closed candle - good place for strategy decision if you run logic in frontend.
-            log(`${symbol} closed candle @ ${k.c}`, true);
-          }
-        } catch (e) {
-          console.error('ws parse err', e);
-        }
+        const data = JSON.parse(evt.data);
+        const k = data.k;
+        const candlestick = {
+          time: Math.floor(k.t / 1000),
+          open: parseFloat(k.o),
+          high: parseFloat(k.h),
+          low: parseFloat(k.l),
+          close: parseFloat(k.c),
+        };
+        candleSeries.update(candlestick);
       };
-
-      ws.onerror = (e) => {
-        console.error('ws err', e);
-        log('WebSocket error');
-        statusEl.textContent = 'ws error';
-      };
-
-      ws.onclose = () => {
-        log('WebSocket disconnected');
-        statusEl.textContent = 'idle';
-      };
+      ws.onclose = () => { statusEl.textContent = 'idle'; };
     }
 
-    function stopKlineStream() {
-      if (ws) {
-        try { ws.close(); } catch(e) {}
-        ws = null;
+    async function fetchHistorical(symbol) {
+      try {
+        const resp = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${klineInterval}&limit=100`);
+        const arr = await resp.json();
+        return arr.map(a => ({
+          time: Math.floor(a[0] / 1000),
+          open: parseFloat(a[1]),
+          high: parseFloat(a[2]),
+          low: parseFloat(a[3]),
+          close: parseFloat(a[4])
+        }));
+      } catch (err) {
+        log('Error loading candles: ' + err.message);
+        return [];
       }
     }
 
-    // When user clicks Load Chart
-    loadChartBtn.addEventListener('click', () => {
-      const s = sel.value || DEFAULT_SYMBOL;
-      // Clear existing series and reset chart (lightweight will update)
-      candleSeries.setData([]); // clear
-      // Optionally fetch recent historical klines to populate initial view
-      fetchHistoricalKlines(s, klineInterval).then(bars => {
-        if (bars && bars.length) {
-          candleSeries.setData(bars);
-        }
-        startKlineStream(s);
-      }).catch(err => {
-        log('Failed to load historical klines: ' + err.message);
-        startKlineStream(s);
-      });
+    loadChartBtn.addEventListener('click', async () => {
+      const symbol = sel.value;
+      candleSeries.setData([]);
+      const bars = await fetchHistorical(symbol);
+      if (bars.length) candleSeries.setData(bars);
+      startKlineStream(symbol);
     });
 
-    // --- Fetch recent klines (use backend proxy to avoid CORS or use Binance public REST if CORS allowed) ---
-    async function fetchHistoricalKlines(symbol, interval) {
-      // Prefer backend route '/klines?symbol=...&interval=...' implemented on your node backend
-      try {
-        const r = await fetch(`/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}`);
-        if (!r.ok) throw new Error('klines fetch failed');
-        const data = await r.json(); // expects array of { time, open, high, low, close }
-        return data;
-      } catch (err) {
-        // fallback: try Binance public REST (may be blocked by CORS)
-        try {
-          const resp = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=150`);
-          if (!resp.ok) throw new Error('binance rest failed');
-          const arr = await resp.json();
-          return arr.map(a => ({
-            time: Math.floor(a[0] / 1000),
-            open: parseFloat(a[1]),
-            high: parseFloat(a[2]),
-            low: parseFloat(a[3]),
-            close: parseFloat(a[4])
-          }));
-        } catch(e) {
-          throw e;
-        }
-      }
-    }
-
-    // --- Bot control: Start/Stop trading (trades executed on backend) ---
     startBtn.addEventListener('click', async () => {
-      const symbol = sel.value || DEFAULT_SYMBOL;
+      const symbol = sel.value;
       const budgetUSDT = parseFloat(budgetInput.value);
-      const sl = parseFloat(document.getElementById('sl').value);
-      const tp = parseFloat(document.getElementById('tp').value);
-
-      if (!budgetUSDT || budgetUSDT <= 0) { alert('Enter a valid budget'); return; }
+      const stopPercent = parseFloat(document.getElementById('sl').value);
+      const takeProfitPercent = parseFloat(document.getElementById('tp').value);
       statusEl.textContent = 'starting trade...';
-      log(`Requesting backend to buy ${symbol} with ${budgetUSDT} USDT (SL ${sl}%, TP ${tp}%)`);
+      log(`Requesting backend to trade ${symbol}`);
 
       try {
         const res = await fetch('/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol, budgetUSDT, stopPercent: sl, takeProfitPercent: tp })
+          body: JSON.stringify({ symbol, budgetUSDT, stopPercent, takeProfitPercent })
         });
         const data = await res.json();
-        if (!res.ok) {
-          throw new Error(JSON.stringify(data));
-        }
-        log('Trade started: ' + JSON.stringify(data));
-        statusEl.textContent = 'position open';
+        log('Trade response: ' + JSON.stringify(data));
+        statusEl.textContent = 'running';
       } catch (err) {
-        console.error(err);
-        log('Error starting trade: ' + err.message);
+        log('Trade error: ' + err.message);
         statusEl.textContent = 'error';
       }
     });
 
     stopBtn.addEventListener('click', async () => {
-      try {
-        await fetch('/stop', { method: 'POST' });
-        statusEl.textContent = 'stopped';
-        log('Bot stopped (requested backend).');
-      } catch (err) {
-        log('Stop failed: ' + err.message);
-      }
+      await fetch('/stop', { method: 'POST' });
+      statusEl.textContent = 'stopped';
+      log('Bot stopped.');
     });
 
-    // Initialize UI
     loadSymbols();
-    // auto-load chart for DEFAULT_SYMBOL
     window.addEventListener('load', () => {
-      sel.value = DEFAULT_SYMBOL;
+      sel.value = 'XRPUSDT';
       loadChartBtn.click();
     });
   </script>

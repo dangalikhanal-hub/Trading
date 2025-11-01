@@ -1,136 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>XRP/USDT Auto Trading Bot</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f8fb;
-      margin: 0;
-      padding: 20px;
-    }
-    h2 {
-      color: #222;
-    }
-    #chart {
-      height: 500px;
-      border: 1px solid #ccc;
-      margin-bottom: 20px;
-    }
-    .controls {
-      max-width: 400px;
-    }
-    label {
-      display: block;
-      margin-top: 8px;
-    }
-    input, button {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      font-size: 14px;
-    }
-    button {
-      background-color: #1976d2;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #125ea3;
-    }
-    pre {
-      background: #fff;
-      border: 1px solid #ccc;
-      padding: 10px;
-      height: 180px;
-      overflow-y: auto;
-    }
-  </style>
-</head>
-<body>
+<!-- Only important parts shown -->
+<script>
+let symbol = "XRPUSDT";
+let budget = 10;
+let stopPercent = 5;
+let takeProfitPercent = 20;
 
-  <h2>XRP/USDT Auto Trading Bot</h2>
+let ws = null;
 
-  <!-- TradingView Chart -->
-  <div id="chart"></div>
+function startBot() {
+    ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_1m`);
+    ws.onmessage = async (msg) => {
+        const data = JSON.parse(msg.data);
+        const k = data.k; // candlestick data
+        const open = parseFloat(k.o);
+        const close = parseFloat(k.c);
+        const high = parseFloat(k.h);
+        const low = parseFloat(k.l);
 
-  <!-- Controls -->
-  <div class="controls">
-    <label>Symbol</label>
-    <input type="text" id="symbol" value="XRPUSDT" readonly>
+        // Simple candlestick pattern example
+        // Bullish: close > open, bearish: close < open
+        if (close > open) {
+            console.log("Bullish candle detected — consider buying");
+            await fetch("/buy", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ symbol, budget })
+            });
+        } else if (close < open) {
+            console.log("Bearish candle detected — consider selling");
+            await fetch("/sell", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ symbol })
+            });
+        }
+    };
+}
 
-    <label>Budget (USDT)</label>
-    <input type="number" id="budget" value="10">
-
-    <label>Stop Loss (%)</label>
-    <input type="number" id="stop" value="5">
-
-    <label>Take Profit (%)</label>
-    <input type="number" id="profit" value="20">
-
-    <button id="start">Start Live Trade</button>
-    <button id="stopBtn" style="background:#666;">Stop Bot</button>
-  </div>
-
-  <h3>Logs:</h3>
-  <pre id="log">Waiting...</pre>
-
-  <!-- TradingView Widget Script -->
-  <script src="https://s3.tradingview.com/tv.js"></script>
-  <script>
-    // Initialize TradingView Chart
-    new TradingView.widget({
-      autosize: true,
-      symbol: "BINANCE:XRPUSDT",
-      interval: "1",
-      timezone: "Etc/UTC",
-      theme: "light",
-      style: "1",
-      locale: "en",
-      toolbar_bg: "#f1f3f6",
-      enable_publishing: false,
-      allow_symbol_change: false,
-      container_id: "chart"
-    });
-
-    // Log function
-    function log(msg) {
-      const t = new Date().toLocaleTimeString();
-      document.getElementById('log').textContent = `[${t}] ${msg}\n` + document.getElementById('log').textContent;
-    }
-
-    // Start Trade
-    document.getElementById('start').addEventListener('click', async () => {
-      const symbol = document.getElementById('symbol').value;
-      const budget = parseFloat(document.getElementById('budget').value);
-      const stop = parseFloat(document.getElementById('stop').value);
-      const profit = parseFloat(document.getElementById('profit').value);
-
-      log(`Starting trade on ${symbol}...`);
-      try {
-        const res = await fetch('/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol, budget, stop, profit })
-        });
-        const data = await res.json();
-        log(`Trade started: ${JSON.stringify(data)}`);
-      } catch (err) {
-        log('Error starting trade: ' + err.message);
-      }
-    });
-
-    // Stop Trade
-    document.getElementById('stopBtn').addEventListener('click', async () => {
-      try {
-        await fetch('/stop', { method: 'POST' });
-        log('Bot stopped.');
-      } catch (err) {
-        log('Error stopping bot: ' + err.message);
-      }
-    });
-  </script>
-</body>
-</html>
+document.getElementById("start").addEventListener("click", startBot);
+</script>

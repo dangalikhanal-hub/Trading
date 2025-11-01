@@ -37,6 +37,7 @@
 </head>
 <body>
   <h2>Crypto Auto Trading Bot</h2>
+  
   <label for="symbols">Select Symbol:</label>
   <select id="symbols"></select><br>
 
@@ -51,16 +52,28 @@
 
   <script>
     async function loadSymbols() {
+      const sel = document.getElementById('symbols');
+      sel.innerHTML = '';
+
+      // Add XRP manually
+      const xrpOption = document.createElement('option');
+      xrpOption.value = 'XRPUSDT';
+      xrpOption.textContent = 'XRP/USDT';
+      sel.appendChild(xrpOption);
+
+      // Try to load the rest from your backend
       try {
         const r = await fetch('/symbols');
         const data = await r.json();
-        const sel = document.getElementById('symbols');
-        sel.innerHTML = '';
+
         data.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s.symbol;
-          opt.textContent = s.symbol + ' (' + s.base + '/' + s.quote + ')';
-          sel.appendChild(opt);
+          // Avoid adding XRP twice
+          if (s.symbol !== 'XRPUSDT') {
+            const opt = document.createElement('option');
+            opt.value = s.symbol;
+            opt.textContent = s.symbol + ' (' + s.base + '/' + s.quote + ')';
+            sel.appendChild(opt);
+          }
         });
       } catch (err) {
         document.getElementById('log').textContent = 'Error loading symbols: ' + err.message;

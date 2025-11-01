@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Crypto Auto Trading Bot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f5f5f5;
+    }
+    h2 {
+      color: #222;
+    }
+    select, input, button {
+      margin: 8px 0;
+      padding: 8px;
+      font-size: 14px;
+    }
+    button {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #125ea3;
+    }
+    pre {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h2>Crypto Auto Trading Bot</h2>
+  <label for="symbols">Select Symbol:</label>
+  <select id="symbols"></select><br>
+
+  <label for="budget">Budget (USDT):</label>
+  <input id="budget" type="number" value="10"><br>
+
+  <button id="start">Start Auto Trade</button>
+  <button id="stop">Stop Bot</button>
+
+  <h3>Logs:</h3>
+  <pre id="log">Waiting for data...</pre>
+
+  <script>
+    async function loadSymbols() {
+      try {
+        const r = await fetch('/symbols');
+        const data = await r.json();
+        const sel = document.getElementById('symbols');
+        sel.innerHTML = '';
+        data.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.symbol;
+          opt.textContent = s.symbol + ' (' + s.base + '/' + s.quote + ')';
+          sel.appendChild(opt);
+        });
+      } catch (err) {
+        document.getElementById('log').textContent = 'Error loading symbols: ' + err.message;
+      }
+    }
+
+    document.getElementById('start').addEventListener('click', async () => {
+      const symbol = document.getElementById('symbols').value;
+      const budgetUSDT = document.getElementById('budget').value;
+      document.getElementById('log').textContent = 'Starting bot...';
+
+      const res = await fetch('/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, budgetUSDT })
+      });
+      const data = await res.json();
+      document.getElementById('log').textContent = JSON.stringify(data, null, 2);
+    });
+
+    document.getElementById('stop').addEventListener('click', async () => {
+      await fetch('/stop', { method: 'POST' });
+      document.getElementById('log').textContent = 'Bot stopped.';
+    });
+
+    loadSymbols();
+  </script>
+</body>
+</html>

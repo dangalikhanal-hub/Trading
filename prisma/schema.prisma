@@ -1,0 +1,300 @@
+// TradeVision Pro - Prisma Database Schema
+// Database: PostgreSQL
+// ORM: Prisma
+// Authentication: Auth.js (NextAuth v5)
+// Trading Mode: SIMULATION / PAPER TRADING ONLY
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// 1. AUTHENTICATION & USERS (Auth.js Standard Schema)
+// ============================================================================
+
+enum UserRole {
+  TRADER
+  VIP_SIMULATOR
+  ADMIN
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String?        @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole       @default(TRADER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  paperAccount  PaperAccount?
+  strategies    Strategy[]
+  watchlists    Watchlist[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  currency  String   // "NPR" or "USDT"
+  balance   Decimal  @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, currency])
+}
+
+
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================================
+// 2. PAPER TRADING ACCOUNT & PORTFOLIO
+// ============================================================================
+
+model PaperAccount {
+  id                String          @id @default(cuid())
+  userId            String          @unique @map("user_id")
+  initialBalance    Decimal         @default(100000.00) @map("initial_balance") @db.Decimal(18, 4)
+  cashBalance       Decimal         @default(100000.00) @map("cash_balance") @db.Decimal(18, 4)
+  reservedMargin    Decimal         @default(0.00) @map("reserved_margin") @db.Decimal(18, 4)
+  currency          String          @default("USD")
+  leverageLimit     Int             @default(50) @map("leverage_limit")
+  isSimulated       Boolean         @default(true) @map("is_simulated")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positions         PaperPosition[]
+  orders            PaperOrder[]
+  trades            PaperTrade[]
+
+  @@map("paper_accounts")
+}
+
+enum PositionSide {
+  LONG
+  SHORT
+}
+
+model PaperPosition {
+  id               String       @id @default(cuid())
+  paperAccountId   String       @map("paper_account_id")
+  symbol           String       // e.g. "BTC/USD", "NVDA", "ETH/USD"
+  side             PositionSide
+  quantity         Decimal      @db.Decimal(18, 8)
+  entryPrice       Decimal      @map("entry_price") @db.Decimal(18, 4)
+  currentPrice     Decimal      @map("current_price") @db.Decimal(18, 4)
+  leverage         Int          @default(1)
+  marginUsed       Decimal      @map("margin_used") @db.Decimal(18, 4)
+  unrealizedPnl    Decimal      @default(0.00) @map("unrealized_pnl") @db.Decimal(18, 4)
+  realizedPnl      Decimal      @default(0.00) @map("realized_pnl") @db.Decimal(18, 4)
+  liquidationPrice Decimal?     @map("liquidation_price") @db.Decimal(18, 4)
+  stopLossPrice    Decimal?     @map("stop_loss_price") @db.Decimal(18, 4)
+  takeProfitPrice  Decimal?     @map("take_profit_price") @db.Decimal(18, 4)
+  openedAt         DateTime     @default(now()) @map("opened_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  paperAccount     PaperAccount @relation(fields: [paperAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([paperAccountId, symbol, side])
+  @@map("paper_positions")
+}
+
+// ============================================================================
+// 3. PAPER ORDERS & SIMULATED EXECUTION RECORDS
+// ============================================================================
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+  STOP_MARKET
+  STOP_LIMIT
+}
+
+enum OrderStatus {
+  PENDING
+  OPEN
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+  REJECTED
+}
+
+enum TimeInForce {
+  GTC // Good 'Til Cancelled
+  IOC // Immediate Or Cancel
+  FOK // Fill Or Kill
+}
+
+model PaperOrder {
+  id             String       @id @default(cuid())
+  paperAccountId String       @map("paper_account_id")
+  clientOrderId  String?      @map("client_order_id")
+  symbol         String
+  side           OrderSide
+  type           OrderType
+  timeInForce    TimeInForce  @default(GTC) @map("time_in_force")
+  status         OrderStatus  @default(PENDING)
+  quantity       Decimal      @db.Decimal(18, 8)
+  filledQuantity Decimal      @default(0.00) @map("filled_quantity") @db.Decimal(18, 8)
+  limitPrice     Decimal?     @map("limit_price") @db.Decimal(18, 4)
+  stopPrice      Decimal?     @map("stop_price") @db.Decimal(18, 4)
+  leverage       Int          @default(1)
+  reduceOnly     Boolean      @default(false) @map("reduce_only")
+  simulatedSlippage Decimal   @default(0.0005) @map("simulated_slippage") @db.Decimal(6, 4) // 0.05%
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  paperAccount   PaperAccount @relation(fields: [paperAccountId], references: [id], onDelete: Cascade)
+  trades         PaperTrade[]
+
+  @@map("paper_orders")
+}
+
+model PaperTrade {
+  id             String       @id @default(cuid())
+  paperAccountId String       @map("paper_account_id")
+  orderId        String       @map("order_id")
+  symbol         String
+  side           OrderSide
+  price          Decimal      @db.Decimal(18, 4)
+  quantity       Decimal      @db.Decimal(18, 8)
+  quoteQuantity  Decimal      @map("quote_quantity") @db.Decimal(18, 4)
+  fee            Decimal      @default(0.00) @db.Decimal(18, 4)
+  realizedPnl    Decimal      @default(0.00) @map("realized_pnl") @db.Decimal(18, 4)
+  executedAt     DateTime     @default(now()) @map("executed_at")
+
+  paperAccount   PaperAccount @relation(fields: [paperAccountId], references: [id], onDelete: Cascade)
+  order          PaperOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("paper_trades")
+}
+
+// ============================================================================
+// 4. STRATEGIES & ALGORITHMIC LAB
+// ============================================================================
+
+model Strategy {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  name        String
+  description String?  @db.Text
+  assetClass  String   @default("CRYPTO") @map("asset_class")
+  symbol      String   @default("BTC/USD")
+  timeframe   String   @default("1h")
+  parameters  Json     // Indicators & thresholds config (RSI, MACD, SMA)
+  isActive    Boolean  @default(false) @map("is_active")
+  winRate     Decimal? @map("win_rate") @db.Decimal(5, 2)
+  totalReturn Decimal? @map("total_return") @db.Decimal(8, 2)
+  sharpeRatio Decimal? @map("sharpe_ratio") @db.Decimal(5, 2)
+  maxDrawdown Decimal? @map("max_drawdown") @db.Decimal(5, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("strategies")
+}
+
+// ============================================================================
+// 5. MARKETS & WATCHLISTS
+// ============================================================================
+
+model Watchlist {
+  id        String          @id @default(cuid())
+  userId    String          @map("user_id")
+  name      String          @default("My Watchlist")
+  items     WatchlistItem[]
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("watchlists")
+}
+
+model WatchlistItem {
+  id          String    @id @default(cuid())
+  watchlistId String    @map("watchlist_id")
+  symbol      String
+  assetType   String    @default("CRYPTO") @map("asset_type") // CRYPTO | EQUITY | FOREX
+  sortOrder   Int       @default(0) @map("sort_order")
+  addedAt     DateTime  @default(now()) @map("added_at")
+
+  watchlist   Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+
+  @@unique([watchlistId, symbol])
+  @@map("watchlist_items")
+}
+
+// ============================================================================
+// 6. AUDIT & ACTIVITY LOGS (Simulation Auditing)
+// ============================================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  action    String   // e.g. "ORDER_PLACED", "BALANCE_RESET", "STRATEGY_RUN"
+  details   Json
+  ipAddress String?  @map("ip_address")
+  timestamp DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}

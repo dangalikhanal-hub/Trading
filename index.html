@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MTrade // Crypto Portfolio & Trading Dashboard</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green: '#00c076',
+              'green-dark': '#00a867',
+              'green-light': '#e6f9f1',
+              'green-subtle': '#f0fbf6',
+              bg: '#f6f7f9',
+              dark: '#111827',
+              gray: '#6b7280',
+              border: '#eaecf0'
+            }
+          },
+          borderRadius: {
+            '2xl': '18px',
+            '3xl': '24px'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-[#f6f7f9] text-[#111827] min-h-screen flex antialiased select-none font-sans">
+
+  <!-- ========================================================================= -->
+  <!-- 1. LEFT SIDEBAR                                                           -->
+  <!-- ========================================================================= -->
+  <aside class="w-64 bg-white border-r border-[#eaecf0] flex flex-col justify-between py-6 px-4 shrink-0 z-20">
+    <div>
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 px-3 mb-8 cursor-pointer">
+        <div class="w-9 h-9 rounded-xl bg-[#00c076] flex items-center justify-center text-white font-black text-lg shadow-sm shadow-[#00c076]/30">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+            <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+            <path d="M7 21h10"></path>
+            <path d="M12 3v18"></path>
+            <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path>
+          </svg>
+        </div>
+        <span class="text-xl font-extrabold tracking-tight text-[#111827]">MTrade</span>
+      </div>
+
+      <!-- Main Navigation Menu -->
+      <nav class="space-y-1 text-sm font-semibold">
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-[#00c076] bg-[#e6f9f1] transition-colors">
+          <i data-lucide="layout-grid" class="w-5 h-5 text-[#00c076]"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+          <i data-lucide="trending-up" class="w-5 h-5"></i>
+          <span>Trade</span>
+        </a>
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+          <i data-lucide="wallet" class="w-5 h-5"></i>
+          <span>Wallet</span>
+        </a>
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+          <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+          <span>Markets</span>
+        </a>
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+          <i data-lucide="file-text" class="w-5 h-5"></i>
+          <span>Transactions</span>
+        </a>
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+          <i data-lucide="plus-circle" class="w-5 h-5"></i>
+          <span>Buy Crypto</span>
+        </a>
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+          <i data-lucide="minus-circle" class="w-5 h-5"></i>
+          <span>Sell Crypto</span>
+        </a>
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+          <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+          <span>Convert</span>
+        </a>
+        <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+          <i data-lucide="users" class="w-5 h-5"></i>
+          <span>Referral</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Bottom Menu -->
+    <div class="space-y-1 text-sm font-semibold pt-4 border-t border-[#eaecf0]">
+      <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+        <i data-lucide="headphones" class="w-5 h-5"></i>
+        <span>Help Center</span>
+      </a>
+      <a href="#" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-gray-500 hover:text-[#111827] hover:bg-gray-50 transition-colors">
+        <i data-lucide="settings" class="w-5 h-5"></i>
+        <span>Settings</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- 2. MAIN VIEW AREA (Header + 2-Column Content)                             -->
+  <!-- ========================================================================= -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+    <!-- Top Header Bar -->
+    <header class="h-20 bg-white/80 backdrop-blur-md px-8 flex items-center justify-between border-b border-[#eaecf0] sticky top-0 z-30">
+      <!-- Left: Back Button & Title -->
+      <div class="flex items-center space-x-3.5">
+        <button class="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-black transition-colors">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </button>
+        <h1 class="text-xl font-bold text-[#111827]">Crypto details</h1>
+      </div>
+
+      <!-- Center & Right: Search, Notifications, Profile -->
+      <div class="flex items-center space-x-4">
+        <!-- Search Input Pill -->
+        <div class="relative w-80">
+          <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-4 top-3.5"></i>
+          <input 
+            type="text" 
+            id="global-search-input"
+            placeholder="Search coins, markets, or portfolio...." 
+            class="w-full bg-[#f6f7f9] border border-gray-200/80 rounded-full py-2.5 pl-11 pr-4 text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#00c076] focus:bg-white transition-all shadow-inner"
+          />
+        </div>
+
+        <!-- Mail Icon Circle Button -->
+        <button class="w-10 h-10 rounded-full bg-[#181a20] hover:bg-black text-white flex items-center justify-center transition-transform active:scale-95 shadow-sm">
+          <i data-lucide="mail" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Notification Bell Circle Button -->
+        <button class="relative w-10 h-10 rounded-full bg-[#181a20] hover:bg-black text-white flex items-center justify-center transition-transform active:scale-95 shadow-sm">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-[#00c076] rounded-full ring-2 ring-white"></span>
+        </button>
+
+        <!-- User Profile Avatar -->
+        <div class="cursor-pointer group flex items-center pl-2">
+          <img 
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120" 
+            alt="Madan Profile" 
+            class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 group-hover:ring-[#00c076] transition-all"
+          />
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Body (2-Column Grid) -->
+    <main class="flex-1 p-8 grid grid-cols-12 gap-8 max-w-[1600px] w-full mx-auto">
+
+      <!-- ===================================================================== -->
+      <!-- COLUMN A (LEFT): CHART CARD, STATS, & ABOUT                           -->
+      <!-- ===================================================================== -->
+      <div class="col-span-12 lg:col-span-8 space-y-6">
+
+        <!-- 1. MAIN PRICE & INTERACTIVE CHART CARD -->
+        <div class="bg-white rounded-3xl p-7 border border-[#eaecf0] shadow-sm relative overflow-hidden">
+          <!-- Token Header Row -->
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-2.5">
+              <div id="coin-avatar" class="w-7 h-7 rounded-full bg-[#f7931a] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                ₿
+              </div>
+              <div class="flex items-baseline space-x-1.5">
+                <span id="coin-title" class="text-base font-extrabold text-[#111827]">Bitcoin</span>
+                <span id="coin-symbol" class="text-sm font-bold text-gray-400">BTC</span>
+              </div>
+            </div>
+
+            <!-- Currency Selector Pill -->
+            <button class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+              <span id="currency-selected">USD</span>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-500"></i>
+            </button>
+          </div>
+
+          <!-- Price & Timeframe Controls -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div class="flex items-baseline space-x-3">
+              <span id="display-price" class="text-4xl font-extrabold text-[#111827] tracking-tight font-mono-numbers">
+                $114,884
+              </span>
+              <div id="display-change-pill" class="flex items-center space-x-1 text-xs font-bold text-[#00c076] bg-[#e6f9f1] px-2.5 py-1 rounded-full">
+                <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                <span id="display-change-text">+2,401.23 (4.61%)</span>
+              </div>
+            </div>
+
+            <!-- Timeframe Filter Buttons -->
+            <div class="flex items-center space-x-1 bg-gray-100/70 p-1 rounded-xl text-xs font-bold text-gray-500" id="timeframe-container">
+              <button class="tf-pill px-3 py-1.5 rounded-lg hover:text-black transition-all" data-tf="1H">1H</button>
+              <button class="tf-pill px-3 py-1.5 rounded-lg hover:text-black transition-all" data-tf="4H">4H</button>
+              <button class="tf-pill px-3 py-1.5 rounded-lg hover:text-black transition-all" data-tf="12H">12H</button>
+              <button class="tf-pill px-3 py-1.5 rounded-lg bg-[#00c076] text-white shadow-sm font-extrabold" data-tf="1D">1D</button>
+              <button class="tf-pill px-3 py-1.5 rounded-lg hover:text-black transition-all" data-tf="1W">1W</button>
+              <button class="tf-pill px-3 py-1.5 rounded-lg hover:text-black transition-all" data-tf="1M">1M</button>
+            </div>
+          </div>
+
+          <!-- Interactive Smooth Bézier Area Chart Container -->
+          <div class="relative w-full h-[320px] select-none" id="chart-area-wrapper">
+            <!-- SVG Chart Layer (Rendered by app.js) -->
+            <svg id="svg-chart" class="w-full h-full overflow-visible" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#00c076" stop-opacity="0.28" />
+                  <stop offset="85%" stop-color="#00c076" stop-opacity="0.02" />
+                  <stop offset="100%" stop-color="#00c076" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              <!-- Filled Area -->
+              <path id="chart-area-path" fill="url(#chartGradient)" d="" />
+              <!-- Top Curve Stroke -->
+              <path id="chart-line-path" fill="none" stroke="#00c076" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="" />
+            </svg>
+
+            <!-- Y-Axis Labels (Right Side) -->
+            <div class="absolute right-0 top-0 bottom-8 flex flex-col justify-between text-[11px] font-semibold text-gray-400 font-mono-numbers pointer-events-none text-right pr-1">
+              <span>45k</span>
+              <span>40k</span>
+              <span>35k</span>
+              <span>30k</span>
+              <span>25k</span>
+              <span>20k</span>
+              <span>15k</span>
+            </div>
+
+            <!-- Dynamic Interactive Tooltip Pin & Glowing Target Marker -->
+            <div id="chart-pin" class="chart-tooltip-pin absolute top-0 left-0 pointer-events-none hidden">
+              <!-- Vertical Dashed Line -->
+              <div class="absolute top-0 bottom-0 w-[1px] border-l-2 border-dashed border-[#00c076]/40 -translate-x-1/2 h-[280px]"></div>
+
+              <!-- Glowing Target Dot -->
+              <div id="pin-dot" class="absolute w-4 h-4 rounded-full bg-[#00c076] border-2 border-white -translate-x-1/2 -translate-y-1/2 pulse-target shadow-md"></div>
+
+              <!-- Floating Tooltip Box -->
+              <div id="pin-box" class="absolute -translate-x-1/2 -translate-y-14 bg-white border border-gray-100 rounded-xl px-3.5 py-2 shadow-xl shadow-gray-200/50 flex flex-col items-center min-w-[110px]">
+                <span id="pin-date" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Nov 12, 2024</span>
+                <span id="pin-price" class="text-sm font-black text-[#111827] font-mono-numbers">$35,752.21</span>
+              </div>
+            </div>
+
+            <!-- X-Axis Timestamps (Bottom) -->
+            <div class="absolute bottom-0 left-0 right-12 flex justify-between text-[11px] font-semibold text-gray-400 font-mono-numbers pt-2 border-t border-gray-100">
+              <span>10:00 AM</span>
+              <span>10:30 AM</span>
+              <span>11:00 AM</span>
+              <span>11:30 AM</span>
+              <span>12:00 PM</span>
+              <span>12:30 PM</span>
+              <span>01:00 PM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. STATS CARD -->
+        <div class="bg-white rounded-3xl p-7 border border-[#eaecf0] shadow-sm">
+          <h2 class="text-lg font-bold text-[#111827] mb-5">Stats</h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+              <span class="text-xs font-semibold text-gray-400 block mb-1.5">Circulating Supply</span>
+              <span id="stat-supply" class="text-base sm:text-lg font-bold text-[#111827] font-mono-numbers">~19.91M BTC</span>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-gray-400 block mb-1.5">Market Cap</span>
+              <span id="stat-mcap" class="text-base sm:text-lg font-bold text-[#111827] font-mono-numbers">$2.27 T</span>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-gray-400 block mb-1.5">FDV</span>
+              <span id="stat-fdv" class="text-base sm:text-lg font-bold text-[#111827] font-mono-numbers">$2.39 T</span>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-gray-400 block mb-1.5">24-Hour Volume</span>
+              <span id="stat-volume" class="text-base sm:text-lg font-bold text-[#111827] font-mono-numbers">$70.7 B</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. ABOUT CARD -->
+        <div class="bg-white rounded-3xl p-7 border border-[#eaecf0] shadow-sm">
+          <h2 id="about-heading" class="text-lg font-bold text-[#111827] mb-3">About Bitcoin</h2>
+          <p id="about-text" class="text-xs sm:text-sm leading-relaxed text-gray-500 font-normal">
+            Bitcoin is one of the most popular cryptocurrencies in the market. First introduced in 2009 by Satoshi Nakamoto, Bitcoin continues to be the top cryptocurrency by market capitalization. Bitcoin paved the way for many existing altcoins in the market and marked a pivotal moment for digital payment solutions. Bitcoin recorded a new all-time high of $114,970, pushing the crypto market capitalization to an impressive $3.5 trillion.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- COLUMN B (RIGHT): QUICK ORDER PANEL & TOP MOVERS                      -->
+      <!-- ===================================================================== -->
+      <div class="col-span-12 lg:col-span-4 space-y-6">
+
+        <!-- 1. BUY / SELL / SWAP CARD -->
+        <div class="bg-white rounded-3xl p-6 border border-[#eaecf0] shadow-sm">
+          <!-- Segmented Tab Pills (Buy / Sell / Swap) -->
+          <div class="grid grid-cols-3 bg-[#f6f7f9] p-1 rounded-2xl mb-5 font-bold text-xs" id="order-mode-tabs">
+            <button class="order-mode-btn active py-2 rounded-xl bg-white text-[#111827] shadow-sm transition-all" data-mode="buy">Buy</button>
+            <button class="order-mode-btn py-2 rounded-xl text-gray-500 hover:text-black transition-all" data-mode="sell">Sell</button>
+            <button class="order-mode-btn py-2 rounded-xl text-gray-500 hover:text-black transition-all" data-mode="swap">Swap</button>
+          </div>
+
+          <!-- Input Group 1: I'm Buying -->
+          <div class="space-y-1.5 mb-3.5">
+            <label class="text-xs font-semibold text-gray-500" id="buying-label">I'm Buying</label>
+            <div class="flex items-center justify-between border border-gray-200 rounded-2xl px-4 py-2.5 hover:border-gray-300 focus-within:border-[#00c076] transition-all bg-white">
+              <input 
+                type="number" 
+                id="input-buy-amount"
+                step="0.001" 
+                value="0.01" 
+                class="w-36 text-base font-extrabold text-[#111827] font-mono-numbers focus:outline-none"
+              />
+              <button type="button" class="flex items-center space-x-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200/80 px-2.5 py-1.5 rounded-full transition-colors">
+                <span class="w-4 h-4 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-[10px] font-bold">₿</span>
+                <span class="text-xs font-bold text-gray-800">BTC</span>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-500"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Input Group 2: I'm Spending -->
+          <div class="space-y-1.5 mb-4">
+            <label class="text-xs font-semibold text-gray-500">I'm Spending</label>
+            <div class="flex items-center justify-between border border-gray-200 rounded-2xl px-4 py-2.5 hover:border-gray-300 focus-within:border-[#00c076] transition-all bg-white">
+              <div class="flex items-center text-base font-extrabold text-[#111827] font-mono-numbers">
+                <span>$</span>
+                <input 
+                  type="number" 
+                  id="input-spending-amount" 
+                  step="0.01" 
+                  value="432.51" 
+                  class="w-32 focus:outline-none ml-0.5"
+                />
+              </div>
+              <button type="button" class="flex items-center space-x-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200/80 px-2.5 py-1.5 rounded-full transition-colors">
+                <span class="text-sm">🇺🇸</span>
+                <span class="text-xs font-bold text-gray-800">USD</span>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-500"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Exchange Rate Pill -->
+          <div class="mb-5 text-xs font-bold text-[#00c076] flex items-center space-x-1">
+            <span>1 BTC = <strong id="dynamic-rate-text">43,251.00 USD</strong></span>
+          </div>
+
+          <!-- Pay With Section -->
+          <div class="space-y-1.5 mb-5">
+            <span class="text-xs font-semibold text-gray-500 block">Pay with</span>
+            <div class="flex items-center justify-between border border-gray-200 rounded-2xl p-3 hover:border-gray-300 transition-all bg-white">
+              <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-[#e6f9f1] flex items-center justify-center text-[#00c076] font-bold">
+                  <svg class="w-5 h-5 text-[#00c076]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v1"></path>
+                    <path d="M18 8h4a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-4"></path>
+                    <circle cx="18" cy="13.5" r="1.5"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-[#111827]">Crypto Wallet</div>
+                  <div class="text-[11px] font-semibold text-gray-400">**** 5602</div>
+                </div>
+              </div>
+              <button class="px-3 py-1 rounded-full border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                Change
+              </button>
+            </div>
+          </div>
+
+          <!-- Primary Submit Button -->
+          <button 
+            id="order-continue-btn"
+            class="w-full py-3.5 rounded-full bg-[#00c076] hover:bg-[#00a867] text-white font-bold text-sm flex items-center justify-center space-x-2 shadow-lg shadow-[#00c076]/25 transition-all active:scale-[0.98]"
+          >
+            <span>Continue</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- 2. TOP MOVERS CARD -->
+        <div class="bg-white rounded-3xl p-6 border border-[#eaecf0] shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-[#111827]">Top Movers</h2>
+            <a href="#" class="text-xs font-bold text-[#00c076] flex items-center space-x-1 hover:underline">
+              <span>More</span>
+              <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+
+          <!-- Top Movers List (Rendered dynamically) -->
+          <div class="divide-y divide-gray-100" id="top-movers-container">
+            <!-- Items injected by app.js -->
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>

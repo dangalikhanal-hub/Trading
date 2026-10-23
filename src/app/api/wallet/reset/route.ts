@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
@@ -11,7 +11,6 @@ export async function POST() {
     return new NextResponse(JSON.stringify({ error: "Unauthenticated" }), { status: 401 });
   }
   const userId = session.user.id as string;
-  // Reset both wallets to default demo balances
   await prisma.wallet.updateMany({
     where: { userId, currency: "NPR" },
     data: { balance: new Prisma.Decimal("1000000") },

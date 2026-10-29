@@ -13,8 +13,8 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). The app includes a
-dashboard and Google sign-in at `/auth/login`. See
-[docs/google-oauth.md](docs/google-oauth.md) for authentication setup.
+dashboard and email-and-password sign-in, with account creation, at
+`/auth/login`.
 
 Run the production build with:
 

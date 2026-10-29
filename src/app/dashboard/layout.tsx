@@ -1,16 +1,36 @@
-import { auth } from "next-auth";
+import { auth } from "@/auth";
 import DashboardHeader from "@/app/dashboard/header";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
+import { Suspense } from "react";
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="p-4" role="status">Loading dashboard...</div>}>
+      <AuthenticatedDashboard>{children}</AuthenticatedDashboard>
+    </Suspense>
+  );
+}
+
+async function AuthenticatedDashboard({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // Auth.js uses cryptographic randomness; run it only after a request arrives.
+  await connection();
   const session = await auth();
+
   if (!session) {
     redirect("/auth/login");
   }
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="tv-shell">
       <DashboardHeader />
-      <main className="p-4">{children}</main>
+      <main>
+        {children}
+      </main>
     </div>
   );
 }

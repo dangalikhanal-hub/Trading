@@ -1,61 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { LayoutDashboard, ChartNoAxesCombined, Wallet, BookOpen, ArrowUpRight, Menu, X, FlaskConical } from "lucide-react";
 
-const menuItems = [
-  { name: "Dashboard", href: "/dashboard" },
-  { name: "NEPSE", href: "/dashboard/nepse" },
-  { name: "Crypto", href: "/dashboard/crypto" },
-  { name: "Chart Analysis", href: "/dashboard/chart-analysis" },
-  { name: "AI Strategies", href: "/dashboard/ai-strategies" },
-  { name: "Paper Trading", href: "/dashboard/paper-trading" },
-  { name: "Portfolio", href: "/dashboard/portfolio" },
-  { name: "Trade History", href: "/dashboard/trade-history" },
-  { name: "Settings", href: "/dashboard/settings" },
+const items = [
+  { name: "Overview", href: "#overview", icon: LayoutDashboard },
+  { name: "Markets", href: "#markets", icon: ChartNoAxesCombined },
+  { name: "My wallets", href: "#wallets", icon: Wallet },
+  { name: "Trade preview", href: "#practice", icon: FlaskConical },
+  { name: "Learning", href: "#activity", icon: BookOpen },
 ];
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      {/* Mobile top bar */}
-      <div className="md:hidden flex items-center justify-between bg-gray-800 p-2 text-white">
-        <button onClick={() => setOpen(!open)} aria-label="Toggle menu">
-          {open ? <X size={24} /> : <Menu size={24} />}
-        </button>
-        <span className="font-semibold">TradeVision Pro</span>
-      </div>
-
-      {/* Overlay for mobile when sidebar is open */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 bg-gray-900 text-gray-100 w-64 transform ${open ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:inset-0 transition-transform duration-200 ease-in-out z-40`}
-      >
-        <div className="h-full flex flex-col p-4">
-          <h2 className="text-xl font-bold mb-6 text-center">TradeVision Pro</h2>
-          <nav className="flex-1 space-y-2">
-            {menuItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="block px-3 py-2 rounded hover:bg-gray-700"
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </aside>
-    </>
-  );
+  const [active, setActive] = useState("Overview");
+  return <><button className="tv-mobile-menu" aria-expanded={open} aria-controls="dashboard-navigation" aria-label={open ? "Close navigation" : "Open navigation"} onClick={() => setOpen(!open)}>{open ? <X size={19} /> : <Menu size={19} />}</button>{open && <button className="tv-sidebar-backdrop" aria-label="Close navigation" onClick={() => setOpen(false)} />}
+    <aside className={`tv-sidebar ${open ? "open" : ""}`} id="dashboard-navigation"><div className="tv-sidebar-label">WORKSPACE</div><nav aria-label="Dashboard">{items.map(item => <a key={item.name} href={item.href} className={active === item.name ? "active" : ""} aria-current={active === item.name ? "location" : undefined} onClick={() => { setActive(item.name); setOpen(false); }}><item.icon size={17} /><span>{item.name}</span>{active === item.name && <span className="tv-nav-dot" />}</a>)}</nav><div className="tv-sidebar-bottom"><div className="tv-sidebar-tip"><span className="tv-tip-icon">↗</span><strong>Practice with purpose.</strong><p>Find your rhythm without risking real funds.</p><a href="#practice" onClick={() => setOpen(false)}>Start exploring <ArrowUpRight size={14} /></a></div><div className="tv-sidebar-status"><span className="tv-dot" /> Demo workspace <small>v1.0</small></div></div></aside>
+  </>;
 }

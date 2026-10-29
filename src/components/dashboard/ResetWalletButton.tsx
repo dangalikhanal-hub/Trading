@@ -1,11 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 
-export default function ResetWalletButton() {
+export default function ResetWalletButton({ onReset }: { onReset: () => Promise<void> }) {
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   const handleReset = async () => {
     if (!window.confirm("Are you sure you want to reset demo balances to default values?")) return
@@ -13,8 +11,7 @@ export default function ResetWalletButton() {
     try {
       const res = await fetch("/api/wallet/reset", { method: "POST" })
       if (!res.ok) throw new Error("Failed to reset wallets")
-      // Refresh page to show updated balances
-      router.refresh()
+      await onReset()
     } catch (e) {
       console.error(e)
       alert("Error resetting wallets")
@@ -27,7 +24,7 @@ export default function ResetWalletButton() {
     <button
       onClick={handleReset}
       disabled={loading}
-      className="mt-2 w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-white disabled:opacity-50"
+      className="tv-button tv-reset"
     >
       {loading ? "Resetting..." : "Reset Demo Balance"}
     </button>

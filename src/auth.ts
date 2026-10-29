@@ -1,0 +1,47 @@
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { prisma } from "@/lib/prisma";
+import { ensureWallets } from "@/lib/wallets";
+import { parseCredentials, verifyPassword } from "@/lib/passwords";
+import { allowAuthAttempt, clientAddress } from "@/lib/auth-rate-limit";
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  adapter: PrismaAdapter(prisma),
+  providers: [
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(input, request) {
+        const credentials = parseCredentials(input);
+        if (!credentials) return null;
+        if (!(await allowAuthAttempt(`login-ip:${clientAddress(request)}`, 30, 15 * 60 * 1000))) return null;
+        if (!(await allowAuthAttempt(`login-email:${credentials.email}`, 10, 15 * 60 * 1000))) return null;
+        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        if (!(await verifyPassword(credentials.password, user?.passwordHash ?? null)) || !user) return null;
+        return { id: user.id, name: user.name, email: user.email, image: user.image };
+      },
+    }),
+  ],
+  secret: process.env.AUTH_SECRET,
+  pages: {
+    signIn: "/auth/login",
+  },
+  session: { strategy: "jwt" },
+  events: {
+    async signIn({ user }) {
+      // Auth.js emits this event after the database user has been created.
+      if (user.id) {
+        await ensureWallets(user.id);
+      }
+    },
+  },
+  callbacks: {
+    async session({ session, token }) {
+      if (token.sub) session.user.id = token.sub;
+      return session;
+    },
+  },
+});

@@ -36,6 +36,7 @@ model User {
 
   accounts      Account[]
   sessions      Session[]
+  wallets       Wallet[]
   paperAccount  PaperAccount?
   strategies    Strategy[]
   watchlists    Watchlist[]
@@ -57,6 +58,15 @@ model Wallet {
 }
 
 
+
+model AuthRateLimit {
+  id       String   @id
+  attempts Int      @default(0)
+  resetAt  DateTime
+
+  @@index([resetAt])
+  @@map("auth_rate_limits")
+}
 
 model Account {
   id                String  @id @default(cuid())

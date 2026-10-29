@@ -1,15 +1,28 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { ensureWallets } from "@/lib/wallets";
+import { parseCredentials, verifyPassword } from "@/lib/passwords";
+import { allowAuthAttempt, clientAddress } from "@/lib/auth-rate-limit";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(input, request) {
+        const credentials = parseCredentials(input);
+        if (!credentials) return null;
+        if (!(await allowAuthAttempt(`login-ip:${clientAddress(request)}`, 30, 15 * 60 * 1000))) return null;
+        if (!(await allowAuthAttempt(`login-email:${credentials.email}`, 10, 15 * 60 * 1000))) return null;
+        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        if (!(await verifyPassword(credentials.password, user?.passwordHash ?? null)) || !user) return null;
+        return { id: user.id, name: user.name, email: user.email, image: user.image };
+      },
     }),
   ],
   secret: process.env.AUTH_SECRET,
@@ -17,31 +30,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/auth/login",
   },
   session: { strategy: "jwt" },
-  callbacks: {
+  events: {
     async signIn({ user }) {
-      const userId = user.id as string;
-      if (userId) {
-        await prisma.wallet.upsert({
-          where: { userId_currency: { userId, currency: "NPR" } },
-          update: {},
-          create: {
-            userId,
-            currency: "NPR",
-            balance: new Prisma.Decimal("1000000"),
-          },
-        });
-        await prisma.wallet.upsert({
-          where: { userId_currency: { userId, currency: "USDT" } },
-          update: {},
-          create: {
-            userId,
-            currency: "USDT",
-            balance: new Prisma.Decimal("10000"),
-          },
-        });
+      // Auth.js emits this event after the database user has been created.
+      if (user.id) {
+        await ensureWallets(user.id);
       }
-      return true;
     },
+  },
+  callbacks: {
     async session({ session, token }) {
       if (token.sub) session.user.id = token.sub;
       return session;

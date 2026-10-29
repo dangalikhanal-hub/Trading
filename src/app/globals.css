@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+.tv-saved-watchlists { margin-top:22px; padding:22px; color:#d2d5df; }
+.tv-saved-watchlists fieldset { border:0; padding:0; min-width:0; }
+.tv-saved-watchlists fieldset:disabled { opacity:.65; }
+.tv-saved-watchlists label { display:block; font-size:12px; margin:10px 0 6px; }
+.tv-saved-watchlists input,.tv-saved-watchlists select { border:1px solid #414555; border-radius:6px; background:#101318; color:#e5e7eb; padding:10px; width:100%; min-width:0; font-size:12px; }
+.tv-saved-watchlists :focus-visible { outline:2px solid #b9a0e5; outline-offset:3px; }
+.tv-saved-watchlists button:disabled { opacity:.45; cursor:wait; }
+.tv-saved-controls { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.tv-saved-input-row { display:flex; align-items:center; gap:8px; }
+.tv-saved-add { display:grid; grid-template-columns:2fr 1fr auto; gap:12px; align-items:end; margin:12px 0 20px; }
+.tv-saved-table { overflow-x:auto; margin-top:14px; }
+.tv-saved-table table { width:100%; border-collapse:collapse; text-align:left; font-size:12px; }
+.tv-saved-table caption { text-align:left; color:#aab0c1; padding:10px 0; }
+.tv-saved-table th,.tv-saved-table td { border-bottom:1px solid #30343f; padding:12px 8px; }
+.tv-saved-table td:last-child { display:flex; flex-wrap:wrap; gap:8px; }
+@media (max-width:700px) { .tv-saved-controls,.tv-saved-add { grid-template-columns:1fr; }.tv-saved-watchlists { padding:16px; } }
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -530,6 +547,7 @@ body {
   font: inherit;
   font-size: 12px;
   text-align: left;
+  text-decoration: none;
   transition: color 180ms ease;
 }
 
@@ -542,6 +560,51 @@ body {
 .login-register-toggle:disabled {
   cursor: wait;
   opacity: 0.6;
+}
+
+.login-approval-note {
+  max-width: 290px;
+  color: #718081;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.login-request-success {
+  display: grid;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.login-request-success h2 {
+  margin: 0;
+  color: #eff4f2;
+  font-size: clamp(28px, 4vw, 34px);
+  font-weight: 520;
+  letter-spacing: -0.05em;
+}
+
+.login-request-success p {
+  margin: 0 0 6px;
+  color: #96a4a8;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.login-success-mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgb(139 226 189 / 45%);
+  border-radius: 50%;
+  background: rgb(120 214 168 / 10%);
+  color: #8be2bd;
+  font-size: 19px;
+}
+
+.login-request-success .login-submit {
+  width: 100%;
+  text-decoration: none;
 }
 
 .login-page-footer {
@@ -853,6 +916,40 @@ body {
 .tv-enter { animation:tv-enter .65s cubic-bezier(.2,.6,.2,1) both; animation-delay:var(--delay,0ms); }
 .tv-paused *, .tv-paused *::before, .tv-paused *::after { animation-play-state:paused!important; }
 .tv-mobile-menu,.tv-sidebar-backdrop { display:none; }
+.tv-admin-link { display:flex; align-items:center; gap:7px; color:#cbbcf0; font-size:11px; text-decoration:none; border:1px solid #3a3148; background:#1e1a27; border-radius:6px; padding:7px 10px; transition:background .2s,color .2s; }
+.tv-admin-link:hover { background:#2a2436; color:#e8defa; }
+.tv-admin-content { width:100%; max-width:1200px; padding-bottom:0; }
+.tv-admin-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; margin-bottom:22px; }
+.tv-admin-stat { display:flex; align-items:center; gap:13px; padding:17px 19px; }
+.tv-admin-stat-icon { display:grid; place-items:center; width:36px; height:36px; border-radius:9px; flex-shrink:0; }
+.tv-admin-stat-pending { color:#e4c88f; background:#332b1c; border:1px solid #4a3d25; }
+.tv-admin-stat-approved { color:#9ddcba; background:#1d2d26; border:1px solid #2f483b; }
+.tv-admin-stat-rejected { color:#e897a7; background:#2f2027; border:1px solid #4b303a; }
+.tv-admin-stat small { display:block; color:#8d93a1; font-size:9px; letter-spacing:.6px; text-transform:uppercase; }
+.tv-admin-stat strong { display:block; margin-top:5px; color:#eef0f5; font-size:23px; font-weight:500; letter-spacing:-.6px; }
+.tv-admin-panel { padding:21px 22px; margin-bottom:18px; }
+.tv-admin-list { list-style:none; margin:18px 0 0; padding:0; display:grid; gap:10px; }
+.tv-admin-row { display:flex; align-items:center; gap:13px; padding:13px 14px; border:1px solid #262b34; border-radius:9px; background:#101318; }
+.tv-admin-row-processed { background:#121419; }
+.tv-admin-avatar { display:grid; place-items:center; width:35px; height:35px; border-radius:50%; flex-shrink:0; background:#2a2437; border:1px solid #423650; color:#c9b7eb; font-size:11px; font-weight:600; letter-spacing:.5px; }
+.tv-admin-person { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.tv-admin-person strong { color:#eceef4; font-size:12px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tv-admin-person small { color:#7e8797; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tv-admin-date { margin-left:auto; color:#6f7888; font-size:9px; text-align:right; white-space:nowrap; }
+.tv-admin-actions { display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end; margin-left:6px; }
+.tv-admin-actions .tv-button { padding:7px 11px; font-size:10px; }
+.tv-admin-approve { background:#21372f; border-color:#355245; color:#b2e5c9; }
+.tv-admin-approve:hover { background:#29463b; }
+.tv-admin-reject { background:#37232d; border-color:#553543; color:#edb1c3; }
+.tv-admin-reject:hover { background:#452b37; }
+.tv-admin-message { flex-basis:100%; font-size:10px; line-height:1.5; text-align:right; }
+.tv-admin-message-error { color:#f2bcc8; }
+.tv-admin-message-success { color:#b2e5c9; }
+.tv-admin-status { margin-left:auto; flex-shrink:0; border-radius:999px; padding:5px 9px; font-size:9px; letter-spacing:.4px; }
+.tv-admin-status-approved { color:#a8e3c2; background:#1d2d26; border:1px solid #2f483b; }
+.tv-admin-status-rejected { color:#eaa9b8; background:#2f2027; border:1px solid #4b303a; }
+@media (max-width:1000px) { .tv-admin-stats { grid-template-columns:repeat(3,minmax(0,1fr)); } .tv-admin-row { flex-wrap:wrap; } .tv-admin-date { margin-left:0; text-align:left; } .tv-admin-actions { margin-left:auto; } }
+@media (max-width:700px) { .tv-admin-link span { display:none; } .tv-admin-stats { grid-template-columns:1fr; } .tv-admin-panel { padding:16px; } .tv-admin-row { align-items:flex-start; } .tv-admin-person { flex:1; } .tv-admin-actions { flex-basis:100%; justify-content:flex-start; margin-left:48px; } .tv-admin-message { text-align:left; } .tv-admin-status { margin-left:0; } }
 @keyframes tv-enter { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
 @keyframes tv-appear { from { opacity:0; } to { opacity:1; } }
 @keyframes tv-draw { from { stroke-dashoffset:1; } to { stroke-dashoffset:0; } }

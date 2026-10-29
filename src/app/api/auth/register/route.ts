@@ -19,28 +19,49 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
-  const credentials = input && typeof input === "object" && !Array.isArray(input) ? parseCredentials(input) : null;
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+  const credentials = parseCredentials(input as Record<string, unknown>);
   if (!credentials) {
     return NextResponse.json({ error: "Enter a valid email and a password of 12–128 characters." }, { status: 400 });
   }
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  if (name.length < 1 || name.length > 80) {
+    return NextResponse.json({ error: "Enter your full name." }, { status: 400 });
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email: credentials.email },
+    select: { id: true },
+  });
+  if (existingUser) {
+    return NextResponse.json({ error: "An account with this email already exists. Try signing in instead." }, { status: 409 });
+  }
+
+  const existingRequest = await prisma.registrationRequest.findUnique({
+    where: { email: credentials.email },
+    select: { status: true },
+  });
+  if (existingRequest?.status === "PENDING") {
+    return NextResponse.json({ error: "This email already has a request awaiting approval." }, { status: 409 });
+  }
+  if (existingRequest?.status === "APPROVED") {
+    return NextResponse.json({ error: "This email is already approved. Try signing in instead." }, { status: 409 });
+  }
+
   const passwordHash = await hashPassword(credentials.password);
   try {
-    await prisma.user.create({
-      data: {
-        email: credentials.email,
-        passwordHash,
-        wallets: { create: [
-          { currency: "NPR", balance: "1000000" },
-          { currency: "USDT", balance: "10000" },
-        ] },
-      },
-      select: { id: true },
+    await prisma.registrationRequest.upsert({
+      where: { email: credentials.email },
+      create: { name, email: credentials.email, passwordHash },
+      update: { name, passwordHash, status: "PENDING", reviewedAt: null, reviewedById: null },
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return NextResponse.json({ error: "Unable to create an account with these details. Try signing in instead." }, { status: 409 });
+      return NextResponse.json({ error: "This email already has a request awaiting approval." }, { status: 409 });
     }
     throw error;
   }
-  return NextResponse.json({ success: true }, { status: 201 });
+  return NextResponse.json({ success: true, pending: true }, { status: 201 });
 }

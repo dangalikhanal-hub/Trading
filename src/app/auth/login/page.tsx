@@ -7,7 +7,6 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [register, setRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -18,19 +17,7 @@ export default function LoginPage() {
     const password = String(form.get("password") ?? "");
     setError("");
     setLoading(true);
-    let accountCreated = false;
     try {
-      if (register) {
-        const response = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Unable to create account.");
-        accountCreated = true;
-      }
-
       const result = await signIn("credentials", {
         email,
         password,
@@ -38,16 +25,11 @@ export default function LoginPage() {
         redirectTo: "/dashboard",
       });
       if (!result || result.error) {
-        throw new Error(
-          accountCreated
-            ? "Account created. Please sign in to continue."
-            : "Unable to sign in. Check your email and password, or try again later.",
-        );
+        throw new Error("Unable to sign in. Check your email and password, or try again later.");
       }
       router.replace("/dashboard");
       router.refresh();
     } catch (cause) {
-      if (accountCreated) setRegister(false);
       setError(cause instanceof Error ? cause.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -153,14 +135,9 @@ export default function LoginPage() {
 
           <div className="login-card-heading">
             <h2 id="login-heading">
-              {register ? "Create your account" : "Welcome back"}
-              <span>.</span>
+              Welcome back<span>.</span>
             </h2>
-            <p>
-              {register
-                ? "Start your paper trading journey today."
-                : "Sign in to pick up where you left off."}
-            </p>
+            <p>Sign in to pick up where you left off.</p>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
@@ -186,16 +163,13 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type="password"
-                autoComplete={register ? "new-password" : "current-password"}
+                autoComplete="current-password"
                 minLength={12}
                 maxLength={128}
                 placeholder="Enter your password"
                 required
                 disabled={loading}
               />
-              {register && (
-                <p className="login-password-hint">Use 12–128 characters.</p>
-              )}
             </div>
 
             {error && (
@@ -210,11 +184,7 @@ export default function LoginPage() {
               disabled={loading}
               aria-busy={loading}
             >
-              {loading
-                ? "Please wait..."
-                : register
-                  ? "Create account"
-                  : "Sign in"}
+              {loading ? "Please wait..." : "Sign in"}
               {!loading && <span aria-hidden="true">↗</span>}
             </button>
           </form>
@@ -229,18 +199,13 @@ export default function LoginPage() {
           </p>
 
           <div className="login-card-bottom">
-            <span>{register ? "Already have an account?" : "New to TradeVision Pro?"}</span>
-            <button
-              className="login-register-toggle"
-              type="button"
-              disabled={loading}
-              onClick={() => {
-                setRegister(!register);
-                setError("");
-              }}
-            >
-              {register ? "Sign in instead" : "Create a free account"}
-            </button>
+            <span>New to TradeVision Pro?</span>
+            <Link className="login-register-toggle" href="/auth/register">
+              Create a free account
+            </Link>
+            <span className="login-approval-note">
+              New accounts are reviewed by an administrator before activation.
+            </span>
           </div>
         </section>
       </div>

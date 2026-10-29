@@ -34,15 +34,39 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  wallets       Wallet[]
-  paperAccount  PaperAccount?
-  strategies    Strategy[]
-  watchlists    Watchlist[]
-  auditLogs     AuditLog[]
+  accounts              Account[]
+  sessions              Session[]
+  wallets               Wallet[]
+  paperAccount          PaperAccount?
+  strategies            Strategy[]
+  watchlists            Watchlist[]
+  auditLogs             AuditLog[]
+  reviewedRegistrations RegistrationRequest[] @relation("RegistrationReviews")
 
   @@map("users")
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RegistrationRequest {
+  id           String             @id @default(cuid())
+  name         String
+  email        String             @unique
+  passwordHash String             @map("password_hash")
+  status       RegistrationStatus @default(PENDING)
+  reviewedAt   DateTime?          @map("reviewed_at")
+  reviewedById String?            @map("reviewed_by_id")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  reviewedBy User? @relation("RegistrationReviews", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("registration_requests")
 }
 
 model Wallet {

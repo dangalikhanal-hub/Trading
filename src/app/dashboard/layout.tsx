@@ -25,9 +25,11 @@ async function AuthenticatedDashboard({
     redirect("/auth/login");
   }
 
+  const role = (session.user as typeof session.user & { role?: string }).role;
+
   return (
     <div className="tv-shell">
-      <DashboardHeader />
+      <DashboardHeader role={role} />
       <main>
         {children}
       </main>

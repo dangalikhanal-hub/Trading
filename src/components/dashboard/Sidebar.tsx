@@ -6,6 +6,7 @@ import { LayoutDashboard, ChartNoAxesCombined, Wallet, BookOpen, ArrowUpRight, M
 const items = [
   { name: "Overview", href: "#overview", icon: LayoutDashboard },
   { name: "Markets", href: "#markets", icon: ChartNoAxesCombined },
+  { name: "Saved watchlists", href: "#saved-watchlists", icon: BookOpen },
   { name: "My wallets", href: "#wallets", icon: Wallet },
   { name: "Trade preview", href: "#practice", icon: FlaskConical },
   { name: "Learning", href: "#activity", icon: BookOpen },

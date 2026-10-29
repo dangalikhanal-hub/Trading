@@ -5,6 +5,7 @@ import { ArrowDownLeft, ArrowUpRight, Activity, ArrowRight, ChevronDown, CircleH
 import Sidebar from "@/components/dashboard/Sidebar";
 import MarketChart from "@/components/dashboard/MarketChart";
 import ResetWalletButton from "@/components/dashboard/ResetWalletButton";
+import SavedWatchlists from "@/components/dashboard/SavedWatchlists";
 
 interface UserWallet { id: string; currency: string; balance: string }
 const markets = [
@@ -130,6 +131,10 @@ export default function DashboardPage() {
             <div className="tv-wallet-actions"><div><ShieldCheck size={16} /><span>Want a fresh start?<small>Restore your demo wallet balances.</small></span></div><ResetWalletButton onReset={refreshWallets} /></div>
           </section>
         </div>
+        <SavedWatchlists onOpenDemo={symbol => {
+          const index = markets.findIndex(item => item.symbol === symbol);
+          if (index >= 0) { setSelected(index); setPreview(""); document.getElementById("markets")?.scrollIntoView({ behavior: "smooth" }); }
+        }} />
         <footer className="tv-footer"><span>TradeVision Pro <span>·</span> Built for your learning curve.</span><span><ShieldCheck size={13} /> Paper trading only</span></footer>
       </div>
     </div>

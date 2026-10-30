@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createChart, CandlestickSeries, HistogramSeries, createSeriesMarkers, ColorType, type IChartApi, type ISeriesApi, type IPriceLine, type Time, type UTCTimestamp, type Logical } from "lightweight-charts";
 import { type Candle, type Timeframe, type Quote, timeframes } from "@/lib/market/types";
 import { detectPatterns, type Pattern } from "@/lib/chart/patterns";
 import { parseDrawings, type Drawing, type DrawingPoint, type DrawingTool } from "@/lib/chart/drawings";
-import { useTicker } from "./useTicker";
+import { candleFromTrade } from "@/lib/chart/live-candle";
+import { Crosshair, MousePointer2, TrendingUp, Minus, MoveVertical, ArrowUpRight, PencilRuler, Square, Undo2, Redo2, Trash2, Save, RefreshCw, Maximize2, ScanLine } from "lucide-react";
 
 const tools: { id: DrawingTool | "pan" | "select"; label: string }[] = [
   { id: "pan", label: "Pan / zoom" }, { id: "select", label: "Select / move" }, { id: "trend", label: "Trend line" },
@@ -20,13 +21,14 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
   const api = useRef<IChartApi | null>(null), series = useRef<ISeriesApi<"Candlestick"> | null>(null), volume = useRef<ISeriesApi<"Histogram"> | null>(null);
   const markerApi = useRef<ReturnType<typeof createSeriesMarkers<Time>> | null>(null);
   const livePriceLine = useRef<IPriceLine | null>(null), liveCandle = useRef<Candle | null>(null);
-  const ticker = useTicker(symbol, referenceQuote);
+  const ticker = { quote: referenceQuote };
+  const patterns = useMemo(() => detectPatterns(candles, timeframes[timeframe]), [candles, timeframe]);
   const dataRef = useRef(candles), patternsRef = useRef<Pattern[]>([]);
   const [tool, setTool] = useState<DrawingTool | "pan" | "select">("pan");
   const [shapes, setShapes] = useState<Drawing[]>([]), [past, setPast] = useState<Drawing[][]>([]), [future, setFuture] = useState<Drawing[][]>([]);
   const [anchor, setAnchor] = useState<DrawingPoint | null>(null), [selected, setSelected] = useState<string | null>(null);
   const [version, setVersion] = useState(0), [loaded, setLoaded] = useState(false), [dirty, setDirty] = useState(false), [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("Loading saved drawings..."), [showPatterns, setShowPatterns] = useState(false);
+  const [message, setMessage] = useState("Loading saved drawings..."), [showPatterns, setShowPatterns] = useState(true);
   const [chosenPattern, setChosenPattern] = useState<Pattern[] | null>(null), [ohlc, setOhlc] = useState<Candle | null>(null);
   const [viewport, setViewport] = useState(0);
   const drag = useRef<{ id: string; endpoint: number | null; start: DrawingPoint; original: Drawing[] } | null>(null);
@@ -44,12 +46,12 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
   useEffect(() => {
     if (!container.current) return;
     const chart = createChart(container.current, { autoSize: true, height: 440,
-      layout: { background: { type: ColorType.Solid, color: "#101720" }, textColor: "#9cabbc", attributionLogo: true },
-      grid: { vertLines: { color: "#1b2735" }, horzLines: { color: "#1b2735" } },
-      rightPriceScale: { borderColor: "#2c3c4f", scaleMargins: { top: .08, bottom: .23 } },
-      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#2c3c4f" },
+      layout: { background: { type: ColorType.Solid, color: "#151e23" }, textColor: "#9cabbc", attributionLogo: true },
+      grid: { vertLines: { color: "#323d42" }, horzLines: { color: "#323d42" } },
+      rightPriceScale: { borderColor: "#3c474d", scaleMargins: { top: .08, bottom: .23 } },
+      timeScale: { timeVisible: true, secondsVisible: false, borderColor: "#3c474d" },
     });
-    const price = chart.addSeries(CandlestickSeries, { upColor: "#40c9a2", downColor: "#ef7182", wickUpColor: "#40c9a2", wickDownColor: "#ef7182", borderVisible: false, priceFormat: { type: "price", precision: 4, minMove: .0001 } });
+    const price = chart.addSeries(CandlestickSeries, { upColor: "#1499f5", downColor: "#ef4d47", wickUpColor: "#1499f5", wickDownColor: "#ef4d47", borderVisible: false, priceFormat: { type: "price", precision: 4, minMove: .0001 } });
     const bars = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "volume" });
     bars.priceScale().applyOptions({ scaleMargins: { top: .82, bottom: 0 } });
     api.current = chart; series.current = price; volume.current = bars;
@@ -72,16 +74,18 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
   }, []);
 
   useEffect(() => {
-    api.current?.applyOptions({ layout: { background: { type: ColorType.Solid, color: light ? "#ffffff" : "#101720" }, textColor: light ? "#34465d" : "#9cabbc" }, grid: { vertLines: { color: light ? "#edf1f5" : "#1b2735" }, horzLines: { color: light ? "#edf1f5" : "#1b2735" } } });
+    api.current?.applyOptions({ layout: { background: { type: ColorType.Solid, color: light ? "#ffffff" : "#151e23" }, textColor: light ? "#34465d" : "#9cabbc" }, grid: { vertLines: { color: light ? "#edf1f5" : "#323d42" }, horzLines: { color: light ? "#edf1f5" : "#323d42" } } });
   }, [light]);
 
   const initialized = useRef(false);
   useEffect(() => {
     const prior = dataRef.current;
-    dataRef.current = candles;
-    liveCandle.current = candles[candles.length - 1] ?? null;
+    const live = liveCandle.current;
+    const display = live && candles.length && live.time > candles[candles.length - 1].time ? [...candles, live] : candles;
+    dataRef.current = display;
+    liveCandle.current = display[display.length - 1] ?? null;
     if (!series.current || !volume.current || !candles.length) return;
-    const sameHistory = initialized.current && prior.length === candles.length && prior.every((c, i) => c.time === candles[i].time && (i === prior.length - 1 || (c.open === candles[i].open && c.high === candles[i].high && c.low === candles[i].low && c.close === candles[i].close && c.volume === candles[i].volume)));
+    const sameHistory = ! (live && candles.length && live.time > candles[candles.length - 1].time) && initialized.current && prior.length === candles.length && prior.every((c, i) => c.time === candles[i].time && (i === prior.length - 1 || (c.open === candles[i].open && c.high === candles[i].high && c.low === candles[i].low && c.close === candles[i].close && c.volume === candles[i].volume)));
     if (sameHistory) {
       const c = candles[candles.length - 1];
       series.current.update({ ...c, time: c.time as UTCTimestamp });
@@ -89,19 +93,18 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
     } else {
       const range = api.current?.timeScale().getVisibleLogicalRange();
       const added = prior.length ? candles.findIndex(c => c.time === prior[0].time) : 0;
-      series.current.setData(candles.map(c => ({ ...c, time: c.time as UTCTimestamp })));
-      volume.current.setData(candles.map(c => ({ time: c.time as UTCTimestamp, value: c.volume, color: c.close >= c.open ? "#40c9a255" : "#ef718255" })));
-      if (!initialized.current) api.current?.timeScale().fitContent();
+      series.current.setData(display.map(c => ({ ...c, time: c.time as UTCTimestamp })));
+      volume.current.setData(display.map(c => ({ time: c.time as UTCTimestamp, value: c.volume, color: c.close >= c.open ? "#40c9a255" : "#ef718255" })));
+      if (!initialized.current) api.current?.timeScale().setVisibleLogicalRange({ from: Math.max(0, candles.length - 90), to: candles.length + 4 });
       else if (range && added > 0) api.current?.timeScale().setVisibleLogicalRange({ from: range.from + added, to: range.to + added });
     }
     initialized.current = true;
-    const patterns = showPatterns ? detectPatterns(candles, timeframes[timeframe]) : [];
-    patternsRef.current = patterns;
+    patternsRef.current = showPatterns ? patterns : [];
     const groups = new Map<number, Pattern[]>();
-    patterns.forEach(p => groups.set(p.time, [...(groups.get(p.time) ?? []), p]));
-    markerApi.current?.setMarkers([...groups].map(([time, group]) => ({ time: time as UTCTimestamp, position: "aboveBar", shape: "circle", color: group[0].bias === "bullish" ? "#40c9a2" : group[0].bias === "bearish" ? "#ef7182" : "#b8a3ef", text: "◆", id: String(time) })));
+    patternsRef.current.forEach(p => groups.set(p.time, [...(groups.get(p.time) ?? []), p]));
+    markerApi.current?.setMarkers([...groups].slice(-24).map(([time, group]) => ({ time: time as UTCTimestamp, position: group[0].bias === "bullish" ? "belowBar" : "aboveBar", shape: group[0].bias === "bullish" ? "arrowUp" : group[0].bias === "bearish" ? "arrowDown" : "circle", color: group[0].bias === "bullish" ? "#45c98a" : group[0].bias === "bearish" ? "#ef4d47" : "#e1c75d", text: group[0].name, id: String(time) })));
     redraw();
-  }, [candles, showPatterns, timeframe]);
+  }, [candles, showPatterns, timeframe, patterns]);
 
   useEffect(() => {
     const quote = ticker.quote;
@@ -109,14 +112,13 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
     const price = Number(quote.price);
     if (!livePriceLine.current) livePriceLine.current = series.current.createPriceLine({ price, color: "#ceac58", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "Latest trade" });
     else livePriceLine.current.applyOptions({ price, title: quote.delivery === "WebSocket ticker" ? "Live last" : "REST last", color: "#ceac58" });
-    const current = liveCandle.current, tradeTime = Date.parse(quote.time) / 1000;
-    // Update only an existing current bar with an observed actual trade. REST
-    // supplies its volume and reconciles history/gaps every 15 seconds.
-    if (quote.delivery === "WebSocket ticker" && current && tradeTime >= current.time && tradeTime < current.time + timeframes[timeframe]) {
-      const next = { ...current, close: price, high: Math.max(current.high, price), low: Math.min(current.low, price) };
-      liveCandle.current = next; series.current.update({ ...next, time: next.time as UTCTimestamp });
+    const next = candleFromTrade(liveCandle.current, quote, timeframes[timeframe]);
+    if (next && candles.length) {
+      liveCandle.current = next;
+      series.current.update({ ...next, time: next.time as UTCTimestamp });
+      dataRef.current = dataRef.current[dataRef.current.length - 1]?.time === next.time ? [...dataRef.current.slice(0, -1), next] : [...dataRef.current, next];
     }
-  }, [ticker.quote, timeframe]);
+  }, [ticker.quote, timeframe, candles.length]);
 
   async function loadDrawings(signal?: AbortSignal) {
     try {
@@ -201,16 +203,18 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
     if (event.key === "Escape") { setAnchor(null); setSelected(null); }
     if (event.key === "Delete" && selected && !(event.target instanceof HTMLInputElement)) commit(shapes.filter(shape => shape.id !== selected));
   }}>
-    <p className="pt-live-ticker" role="status">{ticker.quote ? `${ticker.quote.delivery} · ${ticker.quote.price} USD · ${new Date(ticker.quote.time).toLocaleTimeString()}` : "No fresh ticker price"} · {ticker.connection}. Volume reconciles via REST every 15s; executions use server quotes.</p>
-    <div className="pt-drawing-toolbar" aria-label="Drawing tools">{tools.map(item => <button key={item.id} aria-pressed={tool === item.id} onClick={() => { setTool(item.id); setAnchor(null); }}>{item.label}</button>)}
-      <button disabled={!past.length || saving} onClick={() => { const previous = past[past.length - 1]; setFuture(f => [...f, shapes]); setShapes(previous); setPast(p => p.slice(0, -1)); setDirty(true); }}>Undo</button>
-      <button disabled={!future.length || saving} onClick={() => { const next = future[future.length - 1]; setPast(p => [...p, shapes]); setShapes(next); setFuture(f => f.slice(0, -1)); setDirty(true); }}>Redo</button>
-      <button disabled={!selected || saving} onClick={() => { commit(shapes.filter(s => s.id !== selected)); setSelected(null); }}>Delete selected</button>
-      <button disabled={!shapes.length || saving} onClick={() => { if (window.confirm("Clear all drawings for this symbol and timeframe? Save to persist this change.")) commit([]); }}>Clear drawings</button>
-      <button disabled={!loaded || !dirty || saving || !!drag.current} onClick={() => void save()}>{saving ? "Saving..." : "Save drawings"}</button>
-      <button disabled={saving} onClick={() => { if (!dirty || window.confirm("Discard unsaved drawing changes and reload?")) void loadDrawings(); }}>Reload drawings</button>
+    <div className="pt-drawing-toolbar" aria-label="Drawing tools">{tools.map(item => {
+      const Icon = ({ pan: Crosshair, select: MousePointer2, trend: TrendingUp, horizontal: Minus, vertical: MoveVertical, ray: ArrowUpRight, price: ScanLine, rectangle: Square, fibonacci: PencilRuler })[item.id];
+      return <button key={item.id} title={item.label} aria-label={item.label} aria-pressed={tool === item.id} onClick={() => { setTool(item.id); setAnchor(null); }}><Icon size={20} /></button>;
+    })}
+      <span className="pt-tool-divider" />
+      <button title="Undo" aria-label="Undo drawing" disabled={!past.length || saving} onClick={() => { const previous = past[past.length - 1]; setFuture(f => [...f, shapes]); setShapes(previous); setPast(p => p.slice(0, -1)); setDirty(true); }}><Undo2 size={18} /></button>
+      <button title="Redo" aria-label="Redo drawing" disabled={!future.length || saving} onClick={() => { const next = future[future.length - 1]; setPast(p => [...p, shapes]); setShapes(next); setFuture(f => f.slice(0, -1)); setDirty(true); }}><Redo2 size={18} /></button>
+      <button title="Delete selected drawing" aria-label="Delete selected drawing" disabled={!selected || saving} onClick={() => { commit(shapes.filter(s => s.id !== selected)); setSelected(null); }}><Trash2 size={18} /></button>
+      <button title="Save drawings" aria-label="Save drawings" disabled={!loaded || !dirty || saving || !!drag.current} onClick={() => void save()}><Save size={18} /></button>
+      <button title="Reload drawings" aria-label="Reload drawings" disabled={saving} onClick={() => { if (!dirty || window.confirm("Discard unsaved drawing changes and reload?")) void loadDrawings(); }}><RefreshCw size={18} /></button>
     </div>
-    <div className="pt-chart-information">{current ? <span>{new Date(current.time * 1000).toLocaleString()} · O {current.open} H {current.high} L {current.low} C {current.close} · V {current.volume.toFixed(4)}</span> : "Waiting for actual market candles"}</div>
+    <div className="pt-chart-information">{current ? <span>{new Date(current.time * 1000).toLocaleString()}  /  O {current.open} H {current.high} L {current.low} C {current.close}  /  V {current.volume.toFixed(4)}</span> : "Waiting for actual market candles"}</div>
     <div className="pt-chart-canvas" onWheel={redraw} onPointerMove={tool === "pan" ? redraw : undefined}>
       <div ref={container} className="pt-canvas-host" />
       <svg className={`pt-drawings ${tool === "pan" ? "pt-pass-through" : ""}`} width={width} height={height} role="img" aria-label="Chart drawing overlay" tabIndex={0} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { if (drag.current) setShapes(drag.current.original); drag.current = null; }}>
@@ -221,7 +225,7 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
           const line = (x1: number, y1: number, x2: number, y2: number, key?: string) => <g key={key}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="2" /><line data-drawing={shape.id} x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth="14" /></g>;
           return <g key={shape.id}>
             {shape.tool === "vertical" ? line(a.x, 0, a.x, height) : shape.tool === "horizontal" || shape.tool === "price" ? <>{line(0, a.y, width, a.y)}<text x="8" y={a.y - 5} fill={color} fontSize="12">{shape.points[0].price.toFixed(4)}</text></> : b && (shape.tool === "rectangle" ? <rect data-drawing={shape.id} x={Math.min(a.x, b.x)} y={Math.min(a.y, b.y)} width={Math.abs(a.x - b.x)} height={Math.abs(a.y - b.y)} fill="#a08bfa18" stroke={color} strokeWidth="2" /> : shape.tool === "fibonacci" ? [0, .236, .382, .5, .618, .786, 1].map(level => {
-              const y = a.y + (b.y - a.y) * level; return <g key={level}>{line(a.x, y, b.x, y)}<text x={Math.min(a.x, b.x) + 4} y={y - 4} fill={color} fontSize="11">{level} · {(shape.points[0].price + (shape.points[1].price - shape.points[0].price) * level).toFixed(2)}</text></g>;
+              const y = a.y + (b.y - a.y) * level; return <g key={level}>{line(a.x, y, b.x, y)}<text x={Math.min(a.x, b.x) + 4} y={y - 4} fill={color} fontSize="11">{level}  /  {(shape.points[0].price + (shape.points[1].price - shape.points[0].price) * level).toFixed(2)}</text></g>;
             }) : shape.tool === "ray" ? (() => { const dx = b.x - a.x, endX = dx >= 0 ? width : 0; return line(a.x, a.y, Math.abs(dx) < 1 ? a.x : endX, Math.abs(dx) < 1 ? height : a.y + (b.y - a.y) * (endX - a.x) / dx); })() : line(a.x, a.y, b.x, b.y))}
             {shape.id === selected && shape.points.map((p, i) => { const handle = coords(p); return handle && <circle key={i} data-drawing={shape.id} data-endpoint={i} cx={handle.x} cy={handle.y} r="8" fill={color} stroke="#101720" strokeWidth="2" />; })}
           </g>;
@@ -230,11 +234,11 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
       </svg>
     </div>
     <div className="pt-chart-controls"><label><input type="checkbox" checked={showPatterns} onChange={event => { setShowPatterns(event.target.checked); setChosenPattern(null); }} /> Show candlestick patterns</label>
-      <button onClick={() => api.current?.timeScale().fitContent()}>Fit chart</button><button onClick={async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await shell.current?.requestFullscreen(); } catch { setMessage("Fullscreen is unavailable in this browser."); } }}>Full screen</button>
+      <button onClick={() => api.current?.timeScale().fitContent()}>Fit</button><button onClick={() => api.current?.timeScale().scrollToRealTime()}>Latest</button><button onClick={async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else await shell.current?.requestFullscreen(); } catch { setMessage("Fullscreen is unavailable in this browser."); } }} title="Full screen" aria-label="Full screen chart"><Maximize2 size={16} /></button>
     </div>
-    <p className="pt-muted" role="status">{dirty ? "Unsaved drawings. " : ""}{message}{anchor ? " Tap the second endpoint." : ""} Use Pan / zoom to explore candles and select pattern markers.</p>
-    {showPatterns && <label className="pt-pattern-picker">Inspect detected pattern <select value="" onChange={event => { const time = Number(event.target.value); setChosenPattern(patternsRef.current.filter(p => p.time === time)); }}><option value="">Choose a candle ({patternsRef.current.length} detections)</option>{[...new Set(patternsRef.current.map(p => p.time))].map(time => <option key={time} value={time}>{new Date(time * 1000).toLocaleString()} · {patternsRef.current.filter(p => p.time === time).map(p => p.name).join(", ")}</option>)}</select></label>}
-    {chosenPattern && <aside className="pt-pattern-detail">{chosenPattern.map(p => <p key={p.name}><strong>{p.name} · {p.bias}</strong><br />{new Date(p.time * 1000).toLocaleString()} · {p.explanation}</p>)}<p>Informational heuristics, not guaranteed buy/sell signals. Only closed candles are analyzed.</p><button onClick={() => setChosenPattern(null)}>Close details</button></aside>}
-    <p className="pt-attribution">TradingView Lightweight Charts™ · Copyright © 2025 TradingView, Inc. · <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">TradingView</a></p>
+    <p className="pt-drawing-status" role="status">{dirty ? "Unsaved drawings. " : ""}{message}{anchor ? " Tap the second endpoint." : ""}</p>
+    {showPatterns && <div className="pt-pattern-strip"><span>Recent patterns</span>{patterns.length ? patterns.slice(-3).reverse().map(p => <button key={`${p.time}-${p.name}`} className={`pt-pattern-${p.bias}`} onClick={() => { setChosenPattern(patterns.filter(item => item.time === p.time)); const index = candles.findIndex(c => c.time === p.time); if (index >= 0) api.current?.timeScale().setVisibleLogicalRange({ from: Math.max(0, index - 25), to: index + 10 }); }} title={p.explanation}>{p.name}<small>{new Date(p.time * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small></button>) : <small>No patterns on closed candles yet.</small>}<p>Closed candles only. Patterns describe price action; they do not predict the next move.</p></div>}
+    {chosenPattern && <aside className="pt-pattern-detail">{chosenPattern.map(p => <p key={p.name}><strong>{p.name}  /  {p.bias}</strong><br />{new Date(p.time * 1000).toLocaleString()}  /  {p.explanation}</p>)}<p>Informational heuristics, not guaranteed buy/sell signals. Only closed candles are analyzed.</p><button onClick={() => setChosenPattern(null)}>Close details</button></aside>}
+    <p className="pt-attribution">TradingView Lightweight Charts / Copyright 2025 TradingView, Inc. / <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">TradingView</a></p>
   </section>;
 }

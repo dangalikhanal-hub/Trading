@@ -57,7 +57,7 @@
 .pt-top-actions > button { display: grid; place-items: center; padding: 7px; color: var(--pt-text); }
 .pt-accounts-button { display: flex; align-items: center; justify-content: center; gap: 10px; background: #232f37; padding: 15px 27px; border-radius: 4px; white-space: nowrap; font-size: 14px; }
 .pt-light .pt-accounts-button { background: #e7edf2; }
-.pt-workspace { display: grid; grid-template-columns: 52px minmax(250px, 25%) minmax(340px, 1fr) 300px; grid-template-rows: minmax(0, 1fr) 188px; flex: 1; min-height: 0; gap: 5px; background: var(--pt-border); }
+.pt-workspace { display: grid; grid-template-columns: 52px minmax(250px, 25%) minmax(340px, 1fr) 300px; grid-template-rows: minmax(0, 1fr) 58px; flex: 1; min-height: 0; gap: 5px; background: var(--pt-border); }
 .pt-panel { background: var(--pt-panel); min-width: 0; border-radius: 3px; }
 .pt-rail { grid-column: 1; grid-row: 1 / 3; background: var(--pt-panel); display: flex; align-items: center; flex-direction: column; gap: 17px; padding: 12px 5px; }
 .pt-rail > button, .pt-rail > a { width: 39px; min-height: 40px; display: grid; place-items: center; padding: 7px; color: var(--pt-text); border: 1px solid transparent; border-radius: 4px; }
@@ -227,7 +227,7 @@
   .pt-topbar { height: 98px; gap: 30px; }
   .pt-brand { font-size: 48px; min-width: 190px; }
   .pt-symbol-tabs > button { font-size: 22px; padding-inline: 22px; }
-  .pt-workspace { grid-template-columns: 70px minmax(340px,29%) minmax(430px,1fr) 370px; grid-template-rows: minmax(0,1fr) 150px; }
+  .pt-workspace { grid-template-columns: 70px minmax(340px,29%) minmax(430px,1fr) 370px; grid-template-rows: minmax(0,1fr) 64px; }
   .pt-rail { padding-top: 15px; gap: 25px; }
   .pt-rail > button, .pt-rail > a { width: 46px; height: 46px; }
   .pt-panel-heading { padding: 23px; min-height: 69px; }
@@ -296,7 +296,7 @@
   .pt-mobile-tabs { display: flex; justify-content: center; gap: 8px; padding: 5px 10px; background: var(--pt-panel); border-bottom: 3px solid var(--pt-border); }
   .pt-mobile-tabs > button { font-size: 12px; padding: 6px 24px; color: var(--pt-muted); }
   .pt-mobile-tabs > button[aria-pressed=true] { color: #ffe000; background: #ffe0000b; }
-  .pt-workspace { grid-template-columns: 45px minmax(0,1fr); grid-template-rows: minmax(0,1fr) 160px; }
+  .pt-workspace { grid-template-columns: 45px minmax(0,1fr); grid-template-rows: minmax(0,1fr) 55px; }
   .pt-rail { grid-column: 1; }
   .pt-markets, .pt-chart-panel, .pt-order { grid-column: 2; }
   .pt-markets, .pt-order { display: none; }
@@ -329,7 +329,7 @@
   .pt-account-menu b { font-size: 8px; }
   .pt-account-menu strong { font-size: 11px; gap: 3px; }
   .pt-top-actions { display: none; }
-  .pt-workspace { grid-template-columns: 36px minmax(0,1fr); grid-template-rows: minmax(0,1fr) 145px; gap: 3px; }
+  .pt-workspace { grid-template-columns: 36px minmax(0,1fr); grid-template-rows: minmax(0,1fr) 46px; gap: 3px; }
   .pt-rail { padding-inline: 0; gap: 20px; }
   .pt-rail > button, .pt-rail > a { width: 29px; min-height: 32px; padding: 4px; }
   .pt-rail svg { width: 18px; }
@@ -375,3 +375,18 @@
   .pt-confirmation dl > div { font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) { .pt-terminal * { transition: none !important; } }
+
+.pt-portfolio-toggle { margin-left: auto; display: flex; align-items: center; }
+.pt-terminal:not(.pt-portfolio-expanded) .pt-portfolio { overflow: hidden; }
+.pt-terminal:not(.pt-portfolio-expanded) .pt-portfolio > :not(.pt-tabs) { display: none; }
+.pt-portfolio-expanded .pt-workspace { grid-template-rows: minmax(0,1fr) minmax(180px,29%); }
+@media (max-height: 760px) {
+  .pt-chart-topbar { min-height: 40px; padding-block: 4px; }
+  .pt-symbol-heading { padding-top: 8px; }
+  .pt-symbol-heading h1 { font-size: 13px; }
+  .pt-symbol-price { font-size: 16px; margin-top: 1px; }
+  .pt-chart-information { min-height: 24px; padding-block: 4px; }
+  .pt-chart { grid-template-rows: auto minmax(140px,1fr) auto auto auto auto auto; }
+  .pt-chart-canvas, .pt-canvas-host { min-height: 140px; }
+  .pt-drawing-status { display: none; }
+}

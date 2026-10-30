@@ -102,7 +102,7 @@ export default function PracticeChart({ candles, symbol, timeframe, light, refer
     patternsRef.current = showPatterns ? patterns : [];
     const groups = new Map<number, Pattern[]>();
     patternsRef.current.forEach(p => groups.set(p.time, [...(groups.get(p.time) ?? []), p]));
-    markerApi.current?.setMarkers([...groups].slice(-24).map(([time, group]) => ({ time: time as UTCTimestamp, position: group[0].bias === "bullish" ? "belowBar" : "aboveBar", shape: group[0].bias === "bullish" ? "arrowUp" : group[0].bias === "bearish" ? "arrowDown" : "circle", color: group[0].bias === "bullish" ? "#45c98a" : group[0].bias === "bearish" ? "#ef4d47" : "#e1c75d", text: group[0].name, id: String(time) })));
+    markerApi.current?.setMarkers([...groups].slice(-24).map(([time, group], index, visible) => ({ time: time as UTCTimestamp, position: group[0].bias === "bullish" ? "belowBar" : "aboveBar", shape: group[0].bias === "bullish" ? "arrowUp" : group[0].bias === "bearish" ? "arrowDown" : "circle", color: group[0].bias === "bullish" ? "#45c98a" : group[0].bias === "bearish" ? "#ef4d47" : "#e1c75d", text: index === visible.length - 1 ? group[0].name : "", id: String(time) })));
     redraw();
   }, [candles, showPatterns, timeframe, patterns]);
 

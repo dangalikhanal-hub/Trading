@@ -1,4 +1,4 @@
-// TradeVision Pro - Prisma Database Schema
+// MTrade - Prisma Database Schema
 // Database: PostgreSQL
 // ORM: Prisma
 // Authentication: Auth.js (NextAuth v5)
@@ -42,6 +42,7 @@ model User {
   watchlists            Watchlist[]
   auditLogs             AuditLog[]
   reviewedRegistrations RegistrationRequest[] @relation("RegistrationReviews")
+  chartDrawings         ChartDrawing[]
 
   @@map("users")
 }
@@ -144,6 +145,8 @@ model PaperAccount {
   currency          String          @default("USD")
   leverageLimit     Int             @default(50) @map("leverage_limit")
   isSimulated       Boolean         @default(true) @map("is_simulated")
+  dayKey            String          @default("") @map("day_key")
+  dayStartEquity    Decimal         @default(100000) @map("day_start_equity") @db.Decimal(18, 4)
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
 
@@ -231,12 +234,21 @@ model PaperOrder {
   leverage       Int          @default(1)
   reduceOnly     Boolean      @default(false) @map("reduce_only")
   simulatedSlippage Decimal   @default(0.0005) @map("simulated_slippage") @db.Decimal(6, 4) // 0.05%
+  reservedNotional Decimal    @default(0) @map("reserved_notional") @db.Decimal(18, 4)
+  feeBps         Int          @default(0) @map("fee_bps")
+  stopLossPrice  Decimal?     @map("stop_loss_price") @db.Decimal(18, 4)
+  takeProfitPrice Decimal?    @map("take_profit_price") @db.Decimal(18, 4)
+  triggeredAt    DateTime?    @map("triggered_at")
+  filledAt       DateTime?    @map("filled_at")
+  rejectionReason String?     @map("rejection_reason")
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
   paperAccount   PaperAccount @relation(fields: [paperAccountId], references: [id], onDelete: Cascade)
   trades         PaperTrade[]
 
+  @@unique([paperAccountId, clientOrderId])
+  @@index([paperAccountId, status, createdAt])
   @@map("paper_orders")
 }
 
@@ -251,12 +263,28 @@ model PaperTrade {
   quoteQuantity  Decimal      @map("quote_quantity") @db.Decimal(18, 4)
   fee            Decimal      @default(0.00) @db.Decimal(18, 4)
   realizedPnl    Decimal      @default(0.00) @map("realized_pnl") @db.Decimal(18, 4)
+  entryPrice     Decimal?     @map("entry_price") @db.Decimal(18, 4)
   executedAt     DateTime     @default(now()) @map("executed_at")
 
   paperAccount   PaperAccount @relation(fields: [paperAccountId], references: [id], onDelete: Cascade)
   order          PaperOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  @@index([paperAccountId, executedAt])
   @@map("paper_trades")
+}
+
+model ChartDrawing {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  symbol    String
+  timeframe String
+  shapes    Json
+  version   Int      @default(1)
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol, timeframe])
+  @@map("chart_drawings")
 }
 
 // ============================================================================

@@ -167,7 +167,7 @@ export default async function AdminRegistrationsPage() {
 
       <footer className="tv-footer">
         <span>
-          TradeVision Pro <span>·</span> Registration control
+          MTrade <span>·</span> Registration control
         </span>
         <span>
           <ShieldCheck size={13} /> Super admin only

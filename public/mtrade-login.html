@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MTrade — Institutional Trading Terminal</title>
+  <meta name="description" content="MTrade institutional stock and crypto trading terminal. Sign in or open a trading account." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: "#0b0f19",
+            panel: "#0e1422",
+            mint: "#10b981",
+            loss: "#f43f5e"
+          },
+          fontFamily: {
+            sans: ["Inter", "system-ui", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root { color-scheme: dark; }
+    * { -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: #0b0f19;
+      font-family: "Inter", system-ui, sans-serif;
+    }
+    .glass {
+      background: linear-gradient(155deg, rgba(255,255,255,.058), rgba(255,255,255,.018));
+      border: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 30px 90px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .glass-soft {
+      background: rgba(255,255,255,.025);
+      border: 1px solid rgba(255,255,255,.07);
+      backdrop-filter: blur(14px);
+    }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(255,255,255,.032) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.032) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse at 40% 45%, black 10%, transparent 74%);
+      -webkit-mask-image: radial-gradient(ellipse at 40% 45%, black 10%, transparent 74%);
+    }
+    .hero-glow {
+      background: radial-gradient(circle at 30% 25%, rgba(16,185,129,.14), transparent 42%),
+                  radial-gradient(circle at 80% 80%, rgba(56,189,248,.08), transparent 40%);
+    }
+    .ticker-window { mask-image: linear-gradient(90deg, transparent, black 4%, black 96%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, black 4%, black 96%, transparent); }
+    .ticker-track { display: flex; width: max-content; animation: marquee 42s linear infinite; }
+    .ticker-window:hover .ticker-track { animation-play-state: paused; }
+    .ticker-group { display: flex; align-items: center; gap: 2.4rem; padding-right: 2.4rem; }
+    .ticker-item { display: flex; align-items: center; gap: .55rem; font-family: "JetBrains Mono", monospace; font-size: 11px; white-space: nowrap; }
+    .ticker-symbol { color: #94a3b8; font-weight: 600; letter-spacing: .04em; }
+    .ticker-price { color: #e2e8f0; font-weight: 500; }
+    .ticker-change { font-weight: 600; }
+    .up { color: #10b981; }
+    .down { color: #f43f5e; }
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    @keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,.45); } 50% { box-shadow: 0 0 0 6px rgba(16,185,129,0); } }
+    .pulse-dot { animation: pulse-dot 2.4s ease-in-out infinite; }
+    @keyframes float-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    .float-in { animation: float-in .6s cubic-bezier(.2,.8,.2,1) both; }
+    .cta-shine { position: relative; overflow: hidden; }
+    .cta-shine::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -80%;
+      width: 45%;
+      height: 100%;
+      transform: skewX(-22deg);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+      transition: left .6s ease;
+    }
+    .cta-shine:hover::after { left: 130%; }
+    .field-icon { pointer-events: none; }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #e2e8f0;
+      -webkit-box-shadow: 0 0 0 1000px #080c15 inset;
+      transition: background-color 9999s ease-in-out 0s;
+    }
+    .tab-active { background: rgba(255,255,255,.07); color: #f8fafc; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+    .sso-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .55rem;
+      border-radius: .75rem;
+      border: 1px solid rgba(255,255,255,.09);
+      background: rgba(255,255,255,.025);
+      padding: .7rem .75rem;
+      font-size: 11px;
+      font-weight: 500;
+      color: #cbd5e1;
+      transition: background .2s, border-color .2s, transform .2s;
+    }
+    .sso-btn:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.16); transform: translateY(-1px); }
+    .otp-input {
+      width: 100%;
+      height: 3.5rem;
+      border-radius: .8rem;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(8,12,21,.85);
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .otp-input:focus { border-color: rgba(16,185,129,.65); box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+    .otp-input.filled { border-color: rgba(16,185,129,.35); background: rgba(16,185,129,.06); }
+    .strength-bar { transition: width .35s ease, background-color .35s ease; }
+    .chart-tooltip {
+      position: absolute;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .15s, transform .15s;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(10,15,25,.94);
+      backdrop-filter: blur(12px);
+      border-radius: .6rem;
+      padding: .55rem .7rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      box-shadow: 0 12px 30px rgba(0,0,0,.5);
+      white-space: nowrap;
+    }
+    .chart-tooltip.visible { opacity: 1; transform: translateY(0); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .modal-open { overflow: hidden; }
+    @media (prefers-reduced-motion: reduce) {
+      .ticker-track, .pulse-dot, .float-in { animation: none !important; }
+      * { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-ink text-slate-200 antialiased selection:bg-emerald-500/25 selection:text-white">
+
+  <div class="pointer-events-none fixed inset-0 hero-glow"></div>
+  <div class="pointer-events-none fixed inset-0 grid-bg"></div>
+  <div class="pointer-events-none fixed inset-x-0 top-0 h-40 bg-gradient-to-b from-[#0b0f19] to-transparent"></div>
+
+  <header class="relative z-30 border-b border-white/[0.06] bg-[#080b12]/85 backdrop-blur-xl">
+    <div class="flex h-11 items-center">
+      <a href="#" class="flex shrink-0 items-center gap-2 border-r border-white/[0.06] px-4 lg:px-6">
+        <span class="grid h-6 w-6 place-items-center rounded-md bg-emerald-500 text-[#04120c] shadow-[0_0_18px_rgba(16,185,129,.35)]">
+          <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17 9 11l4 4 8-8" />
+            <path d="M15 7h6v6" />
+          </svg>
+        </span>
+        <span class="text-[13px] font-bold tracking-tight text-white">MTrade<span class="ml-1 font-mono text-[8px] font-medium uppercase tracking-[.2em] text-emerald-400/80">Terminal</span></span>
+      </a>
+
+      <div class="ticker-window min-w-0 flex-1 overflow-hidden">
+        <div id="tickerTrack" class="ticker-track"></div>
+      </div>
+
+      <div class="hidden shrink-0 items-center gap-2 border-l border-white/[0.06] px-4 md:flex lg:px-6">
+        <span class="pulse-dot h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+        <span class="font-mono text-[9px] uppercase tracking-[.16em] text-slate-400">Markets Open</span>
+        <span id="marketClock" class="font-mono text-[9px] text-slate-600"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10 mx-auto grid min-h-[calc(100vh-44px)] w-full max-w-[1560px] grid-cols-1 gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_450px] lg:gap-10 lg:px-8 lg:py-8">
+
+    <section class="hidden min-w-0 flex-col justify-between gap-6 lg:flex">
+      <div class="float-in">
+        <div class="mb-4 flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/[0.07] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[.18em] text-emerald-400">
+            <span class="pulse-dot h-1 w-1 rounded-full bg-emerald-400"></span>
+            Institutional access
+          </span>
+          <span class="font-mono text-[9px] uppercase tracking-[.14em] text-slate-600">v4.2.1</span>
+        </div>
+        <h1 class="max-w-[620px] text-[clamp(2.4rem,4.2vw,4rem)] font-semibold leading-[1.02] tracking-[-.055em] text-white">
+          Trade the market<br />
+          <span class="bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-300 bg-clip-text text-transparent">with an edge.</span>
+        </h1>
+        <p class="mt-4 max-w-[480px] text-[13px] leading-7 text-slate-400">
+          Institutional-grade execution, real-time risk controls, and deep market intelligence — built for traders who demand precision.
+        </p>
+        <div class="mt-5 flex flex-wrap items-center gap-2">
+          <span class="glass-soft rounded-lg px-2.5 py-1.5 font-mono text-[9px] text-slate-400">REAL-TIME DATA</span>
+          <span class="glass-soft rounded-lg px-2.5 py-1.5 font-mono text-[9px] text-slate-400">SMART ORDER ROUTING</span>
+          <span class="glass-soft rounded-lg px-2.5 py-1.5 font-mono text-[9px] text-slate-400">PAPER TRADING</span>
+        </div>
+      </div>
+
+      <div class="glass float-in overflow-hidden rounded-2xl" style="animation-delay: 90ms">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3.5">
+          <div class="flex items-center gap-3">
+            <span class="grid h-9 w-9 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] font-mono text-[11px] font-bold text-emerald-400">SPY</span>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-white">S&amp;P 500 ETF</span>
+                <span class="rounded border border-white/10 bg-white/[0.03] px-1.5 py-0.5 font-mono text-[8px] text-slate-500">NYSE</span>
+              </div>
+              <div class="mt-0.5 flex items-center gap-2">
+                <span id="chartPrice" class="font-mono text-[15px] font-semibold tracking-tight text-white">548.32</span>
+                <span id="chartChange" class="font-mono text-[10px] font-semibold up">+0.42%</span>
+                <span class="font-mono text-[9px] text-slate-600">USD</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 rounded-lg border border-white/[0.07] bg-[#080c15]/70 p-1" role="tablist" aria-label="Chart timeframe">
+            <button data-timeframe="1D" class="timeframe-btn rounded-md px-2.5 py-1.5 font-mono text-[9px] font-medium text-slate-500 transition hover:text-slate-200">1D</button>
+            <button data-timeframe="1W" class="timeframe-btn rounded-md px-2.5 py-1.5 font-mono text-[9px] font-medium text-slate-500 transition hover:text-slate-200">1W</button>
+            <button data-timeframe="1M" class="timeframe-btn rounded-md px-2.5 py-1.5 font-mono text-[9px] font-medium text-slate-500 transition hover:text-slate-200">1M</button>
+          </div>
+        </div>
+
+        <div class="relative h-[290px] w-full px-1 pt-2 sm:h-[320px]" id="chartWrap">
+          <canvas id="chartCanvas" class="h-full w-full" aria-label="Simulated live SPY candlestick chart"></canvas>
+          <div id="chartTooltip" class="chart-tooltip"></div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-3">
+          <div class="flex items-center gap-2 font-mono text-[9px] text-slate-600">
+            <span class="pulse-dot h-1 w-1 rounded-full bg-emerald-400"></span>
+            Simulated live feed
+          </div>
+          <div class="flex items-center gap-4 font-mono text-[9px] text-slate-600">
+            <span>O <span id="statOpen" class="text-slate-400">—</span></span>
+            <span>H <span id="statHigh" class="text-slate-400">—</span></span>
+            <span>L <span id="statLow" class="text-slate-400">—</span></span>
+            <span>C <span id="statClose" class="text-slate-400">—</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div class="glass float-in rounded-2xl p-4" style="animation-delay: 150ms">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-[8px] uppercase tracking-[.16em] text-slate-500">Fear &amp; Greed</span>
+            <i data-lucide="gauge" class="h-3.5 w-3.5 text-slate-600"></i>
+          </div>
+          <div class="relative mt-2 flex justify-center">
+            <svg viewBox="0 0 120 70" class="w-full max-w-[150px]">
+              <defs>
+                <linearGradient id="fngGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#f43f5e" />
+                  <stop offset=".5" stop-color="#f59e0b" />
+                  <stop offset="1" stop-color="#10b981" />
+                </linearGradient>
+              </defs>
+              <path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="7" stroke-linecap="round" />
+              <path id="fngArc" d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="url(#fngGrad)" stroke-width="7" stroke-linecap="round" stroke-dasharray="157.08" stroke-dashoffset="50" />
+              <g id="fngNeedle" transform="rotate(32 60 60)">
+                <line x1="60" y1="60" x2="60" y2="24" stroke="#e2e8f0" stroke-width="1.6" stroke-linecap="round" />
+                <circle cx="60" cy="60" r="3.4" fill="#e2e8f0" />
+              </g>
+              <text x="12" y="68" fill="#475569" font-size="7" font-family="JetBrains Mono, monospace">0</text>
+              <text x="56" y="22" fill="#475569" font-size="7" font-family="JetBrains Mono, monospace">50</text>
+              <text x="104" y="68" fill="#475569" font-size="7" font-family="JetBrains Mono, monospace">100</text>
+            </svg>
+            <div class="absolute inset-x-0 bottom-0 text-center">
+              <span id="fngValue" class="font-mono text-xl font-semibold text-white">68</span>
+              <span id="fngLabel" class="ml-1 font-mono text-[9px] text-emerald-400">Greed</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass float-in rounded-2xl p-4" style="animation-delay: 210ms">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-[8px] uppercase tracking-[.16em] text-slate-500">24h Volume</span>
+            <i data-lucide="bar-chart-3" class="h-3.5 w-3.5 text-slate-600"></i>
+          </div>
+          <div class="mt-3 font-mono text-xl font-semibold tracking-tight text-white">$42.8<span class="ml-0.5 text-[10px] font-normal text-slate-500">B</span></div>
+          <div class="mt-3 flex h-8 items-end gap-1" id="volumeBars" aria-hidden="true"></div>
+          <div class="mt-2 font-mono text-[8px] text-emerald-400">+12.4% vs 30d avg</div>
+        </div>
+
+        <div class="glass float-in rounded-2xl p-4" style="animation-delay: 270ms">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-[8px] uppercase tracking-[.16em] text-slate-500">Execution</span>
+            <i data-lucide="zap" class="h-3.5 w-3.5 text-slate-600"></i>
+          </div>
+          <div class="mt-3 font-mono text-xl font-semibold tracking-tight text-white">9.4<span class="ml-0.5 text-[10px] font-normal text-slate-500">ms</span></div>
+          <div class="mt-3 flex items-center gap-1.5">
+            <span class="pulse-dot h-1 w-1 rounded-full bg-emerald-400"></span>
+            <span class="font-mono text-[8px] text-slate-500">Optimal routing</span>
+          </div>
+          <div class="mt-2 font-mono text-[8px] text-slate-600">99.99% uptime · 24/5</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="flex items-center justify-center">
+      <div class="glass float-in w-full max-w-[450px] rounded-2xl p-6 sm:p-7">
+        <div class="mb-6 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500 text-[#04120c] shadow-[0_0_24px_rgba(16,185,129,.3)]">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 17 9 11l4 4 8-8" />
+                <path d="M15 7h6v6" />
+              </svg>
+            </span>
+            <div>
+              <div class="text-[15px] font-bold tracking-tight text-white">MTrade</div>
+              <div class="font-mono text-[8px] uppercase tracking-[.18em] text-slate-500">Trading Terminal</div>
+            </div>
+          </div>
+          <span class="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2 py-1 font-mono text-[8px] text-slate-500">
+            <i data-lucide="lock-keyhole" class="h-2.5 w-2.5 text-emerald-400"></i>
+            SECURE
+          </span>
+        </div>
+
+        <div class="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-white/[0.07] bg-[#080c15]/70 p-1" role="tablist" aria-label="Authentication mode">
+          <button id="tabSignIn" data-tab="signin" role="tab" aria-selected="true" aria-controls="signinPanel" class="tab-active rounded-lg px-3 py-2.5 text-[11px] font-semibold transition">Sign In</button>
+          <button id="tabRegister" data-tab="register" role="tab" aria-selected="false" aria-controls="registerPanel" class="rounded-lg px-3 py-2.5 text-[11px] font-semibold text-slate-500 transition hover:text-slate-300">Open Trading Account</button>
+        </div>
+
+        <div id="signinPanel" role="tabpanel" aria-labelledby="tabSignIn">
+          <div class="mb-5">
+            <h2 class="text-lg font-semibold tracking-tight text-white">Welcome back</h2>
+            <p class="mt-1 text-[11px] text-slate-500">Sign in to access your trading terminal.</p>
+          </div>
+
+          <form id="signinForm" class="space-y-3.5" novalidate>
+            <div>
+              <label for="signinEmail" class="mb-1.5 block font-mono text-[9px] uppercase tracking-[.14em] text-slate-500">Email / Account ID</label>
+              <div class="relative">
+                <i data-lucide="mail" class="field-icon absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600"></i>
+                <input id="signinEmail" name="email" type="text" autocomplete="username" placeholder="trader@mtrade.io" class="w-full rounded-xl border border-white/10 bg-[#080c15]/85 py-3 pl-10 pr-4 text-[12px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10" />
+              </div>
+            </div>
+
+            <div>
+              <label for="signinPassword" class="mb-1.5 block font-mono text-[9px] uppercase tracking-[.14em] text-slate-500">Password</label>
+              <div class="relative">
+                <i data-lucide="lock" class="field-icon absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600"></i>
+                <input id="signinPassword" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" class="w-full rounded-xl border border-white/10 bg-[#080c15]/85 py-3 pl-10 pr-11 text-[12px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10" />
+                <button type="button" data-toggle-password="signinPassword" aria-label="Show password" class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-300">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 pt-0.5">
+              <label class="flex cursor-pointer items-center gap-2 text-[10px] text-slate-500">
+                <input id="rememberDevice" type="checkbox" class="h-3.5 w-3.5 rounded border-white/20 bg-[#080c15] accent-emerald-500" />
+                Remember device
+              </label>
+              <button type="button" data-forgot class="text-[10px] font-medium text-emerald-400 transition hover:text-emerald-300">Forgot password?</button>
+            </div>
+
+            <button type="button" id="demoFill" class="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2.5 text-[10px] font-semibold text-emerald-300 transition hover:border-emerald-500/35 hover:bg-emerald-500/[0.1]">
+              <i data-lucide="zap" class="h-3.5 w-3.5"></i>
+              Demo Trader — auto-fill credentials
+            </button>
+
+            <button type="submit" class="cta-shine group flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3.5 text-[12px] font-bold text-[#04120c] transition hover:bg-emerald-400 hover:shadow-[0_0_34px_rgba(16,185,129,.35)]">
+              Enter Terminal
+              <i data-lucide="arrow-right" class="h-4 w-4 transition-transform group-hover:translate-x-0.5"></i>
+            </button>
+          </form>
+
+          <div class="my-5 flex items-center gap-3">
+            <span class="h-px flex-1 bg-white/[0.07]"></span>
+            <span class="font-mono text-[8px] uppercase tracking-[.16em] text-slate-600">or continue with</span>
+            <span class="h-px flex-1 bg-white/[0.07]"></span>
+          </div>
+
+          <button type="button" data-passkey class="sso-btn mb-2 w-full">
+            <i data-lucide="fingerprint" class="h-4 w-4 text-emerald-400"></i>
+            Continue with passkey / biometric
+          </button>
+
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" data-sso="Google" class="sso-btn">
+              <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.4c-.24 1.4-1.7 4.2-5.4 4.2-3.25 0-5.9-2.7-5.9-6s2.65-6 5.9-6c1.85 0 3.1.8 3.8 1.5l2.6-2.5C16.75 3.7 14.6 2.7 12 2.7 6.9 2.7 2.8 6.9 2.8 12s4.1 9.3 9.2 9.3c5.3 0 8.8-3.7 8.8-9 0-.6-.06-1.1-.15-2.1H12Z"/></svg>
+              Google
+            </button>
+            <button type="button" data-sso="Bloomberg" class="sso-btn">
+              <span class="grid h-3.5 w-3.5 place-items-center rounded-[2px] bg-[#f59e0b] font-mono text-[8px] font-bold text-black">B</span>
+              Bloomberg
+            </button>
+            <button type="button" data-sso="Apple" class="sso-btn">
+              <svg viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" aria-hidden="true"><path d="M16.4 12.8c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.7-.4 6.7 1.1 8.9.7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7s1.7.7 2.9.7c1.2 0 2-1.1 2.7-2.1.9-1.3 1.2-2.5 1.2-2.6-.1 0-2.3-.9-2.3-3.5ZM14.2 6.1c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.4-.6.7-1 1.8-.9 2.8 1 .1 2-.5 2.6-1.3Z"/></svg>
+              Apple
+            </button>
+          </div>
+
+          <p class="mt-5 text-center text-[9px] leading-5 text-slate-600">
+            Protected by institutional-grade encryption.<br />
+            MTrade is a paper trading platform. No real funds are at risk.
+          </p>
+        </div>
+
+        <div id="registerPanel" role="tabpanel" aria-labelledby="tabRegister" class="hidden">
+          <div class="mb-5">
+            <h2 class="text-lg font-semibold tracking-tight text-white">Open your account</h2>
+            <p class="mt-1 text-[11px] text-slate-500">Apply for access to the MTrade terminal.</p>
+          </div>
+
+          <form id="registerForm" class="space-y-3.5" novalidate>
+            <div>
+              <label for="registerName" class="mb-1.5 block font-mono text-[9px] uppercase tracking-[.14em] text-slate-500">Full name</label>
+              <div class="relative">
+                <i data-lucide="user" class="field-icon absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600"></i>
+                <input id="registerName" name="name" type="text" autocomplete="name" placeholder="Alex Morgan" class="w-full rounded-xl border border-white/10 bg-[#080c15]/85 py-3 pl-10 pr-4 text-[12px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10" />
+              </div>
+            </div>
+
+            <div>
+              <label for="registerEmail" class="mb-1.5 block font-mono text-[9px] uppercase tracking-[.14em] text-slate-500">Work email</label>
+              <div class="relative">
+                <i data-lucide="mail" class="field-icon absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600"></i>
+                <input id="registerEmail" name="email" type="email" autocomplete="email" placeholder="you@company.com" class="w-full rounded-xl border border-white/10 bg-[#080c15]/85 py-3 pl-10 pr-4 text-[12px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10" />
+              </div>
+            </div>
+
+            <div>
+              <label for="registerPassword" class="mb-1.5 block font-mono text-[9px] uppercase tracking-[.14em] text-slate-500">Password</label>
+              <div class="relative">
+                <i data-lucide="lock" class="field-icon absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600"></i>
+                <input id="registerPassword" name="password" type="password" autocomplete="new-password" placeholder="Create a strong password" class="w-full rounded-xl border border-white/10 bg-[#080c15]/85 py-3 pl-10 pr-11 text-[12px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10" />
+                <button type="button" data-toggle-password="registerPassword" aria-label="Show password" class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-300">
+                  <i data-lucide="eye"></i>
+                </button>
+              </div>
+              <div class="mt-2 flex items-center gap-2">
+                <div class="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div id="strengthBar" class="strength-bar h-full w-0 rounded-full bg-rose-500"></div>
+                </div>
+                <span id="strengthLabel" class="w-16 text-right font-mono text-[8px] text-slate-600">—</span>
+              </div>
+            </div>
+
+            <div>
+              <label for="registerPasswordConfirm" class="mb-1.5 block font-mono text-[9px] uppercase tracking-[.14em] text-slate-500">Confirm password</label>
+              <div class="relative">
+                <i data-lucide="shield-check" class="field-icon absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600"></i>
+                <input id="registerPasswordConfirm" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Repeat your password" class="w-full rounded-xl border border-white/10 bg-[#080c15]/85 py-3 pl-10 pr-4 text-[12px] text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10" />
+              </div>
+            </div>
+
+            <label class="flex cursor-pointer items-start gap-2 pt-0.5 text-[9px] leading-5 text-slate-500">
+              <input id="registerTerms" type="checkbox" class="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-white/20 bg-[#080c15] accent-emerald-500" />
+              <span>I agree to the <button type="button" data-terms class="text-emerald-400 hover:text-emerald-300">Terms of Service</button> and <button type="button" data-terms class="text-emerald-400 hover:text-emerald-300">Privacy Policy</button>.</span>
+            </label>
+
+            <button type="submit" class="cta-shine group flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3.5 text-[12px] font-bold text-[#04120c] transition hover:bg-emerald-400 hover:shadow-[0_0_34px_rgba(16,185,129,.35)]">
+              Open Trading Account
+              <i data-lucide="arrow-right" class="h-4 w-4 transition-transform group-hover:translate-x-0.5"></i>
+            </button>
+          </form>
+
+          <p class="mt-4 text-center text-[9px] leading-5 text-slate-600">
+            Account requests are reviewed by our access team.<br />
+            You will receive a verification code once approved.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="otpModal" class="fixed inset-0 z-50 hidden items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="otpTitle">
+    <div id="otpBackdrop" class="absolute inset-0 bg-black/75 backdrop-blur-md"></div>
+    <div class="glass relative w-full max-w-[400px] rounded-2xl p-6 sm:p-7">
+      <button id="otpClose" type="button" aria-label="Close verification" class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-200">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+
+      <div id="otpStep">
+        <div class="mb-5 flex items-center gap-3">
+          <span class="grid h-11 w-11 place-items-center rounded-xl border border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-400">
+            <i data-lucide="shield-check" class="h-5 w-5"></i>
+          </span>
+          <div>
+            <h3 id="otpTitle" class="text-[15px] font-semibold text-white">Two-factor verification</h3>
+            <p class="mt-0.5 text-[10px] text-slate-500">Enter the 6-digit code from your authenticator.</p>
+          </div>
+        </div>
+
+        <div class="mb-4 flex items-center justify-between rounded-lg border border-white/[0.07] bg-[#080c15]/70 px-3 py-2">
+          <span class="flex items-center gap-1.5 font-mono text-[9px] text-slate-500">
+            <i data-lucide="smartphone" class="h-3 w-3 text-emerald-400"></i>
+            Authenticator app
+          </span>
+          <span id="otpTimer" class="font-mono text-[9px] text-slate-400">Expires in 00:30</span>
+        </div>
+
+        <div class="grid grid-cols-6 gap-2" id="otpInputs">
+          <input class="otp-input" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="Digit 1" />
+          <input class="otp-input" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2" />
+          <input class="otp-input" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3" />
+          <input class="otp-input" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4" />
+          <input class="otp-input" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5" />
+          <input class="otp-input" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 6" />
+        </div>
+
+        <p class="mt-3 text-center font-mono text-[8px] text-slate-600">Demo mode: enter any 6 digits</p>
+
+        <button id="otpVerify" type="button" disabled class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-[11px] font-bold text-[#04120c] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40">
+          <span id="otpVerifyLabel">Verify &amp; Enter Terminal</span>
+          <i data-lucide="arrow-right" class="h-4 w-4"></i>
+        </button>
+
+        <div class="mt-4 flex items-center justify-between gap-3">
+          <button id="otpResend" type="button" class="font-mono text-[9px] text-slate-500 transition hover:text-emerald-300">Resend code</button>
+          <button id="otpCancel" type="button" class="font-mono text-[9px] text-slate-500 transition hover:text-slate-300">Cancel</button>
+        </div>
+      </div>
+
+      <div id="otpSuccess" class="hidden py-4 text-center">
+        <div class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-emerald-500/30 bg-emerald-500/[0.1] text-emerald-400">
+          <i data-lucide="check" class="h-7 w-7"></i>
+        </div>
+        <h3 class="mt-4 text-lg font-semibold text-white" id="otpSuccessTitle">Access granted</h3>
+        <p id="otpSuccessText" class="mx-auto mt-2 max-w-[260px] text-[11px] leading-5 text-slate-500">Welcome to MTrade. Your terminal is ready.</p>
+        <button id="otpDone" type="button" class="mt-5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[11px] font-semibold text-slate-200 transition hover:bg-white/[0.08]">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 items-center gap-2 rounded-xl border border-white/10 bg-[#0e1422]/95 px-4 py-3 text-[11px] text-slate-200 shadow-2xl backdrop-blur-xl">
+    <span id="toastIcon" class="text-emerald-400"><i data-lucide="check-circle-2" class="h-4 w-4"></i></span>
+    <span id="toastText"></span>
+  </div>
+
+  <script>
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+    const money = (value, digits = 2) => Number(value).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+    const tickers = [
+      { symbol: "SPY", price: 548.32, change: 0.42 },
+      { symbol: "QQQ", price: 472.18, change: 0.67 },
+      { symbol: "NVDA", price: 124.88, change: 1.92 },
+      { symbol: "AAPL", price: 228.14, change: -0.31 },
+      { symbol: "BTC/USD", price: 68432.8, change: 2.14 },
+      { symbol: "VIX", price: 13.42, change: -1.28 },
+      { symbol: "DXY", price: 104.21, change: 0.12 }
+    ];
+
+    function renderTicker() {
+      const html = tickers.map((item) => `
+        <div class="ticker-item" data-symbol="${item.symbol}">
+          <span class="ticker-symbol">${item.symbol}</span>
+          <span class="ticker-price">${money(item.price)}</span>
+          <span class="ticker-change ${item.change >= 0 ? "up" : "down"}">${item.change >= 0 ? "+" : ""}${item.change.toFixed(2)}%</span>
+        </div>`).join("");
+      $("#tickerTrack").innerHTML = `<div class="ticker-group">${html}</div><div class="ticker-group" aria-hidden="true">${html}</div>`;
+    }
+
+    function updateTicker() {
+      tickers.forEach((item) => {
+        const drift = (Math.random() - 0.48) * item.price * 0.0007;
+        item.price = Math.max(1, item.price + drift);
+        item.change = Math.max(-9.99, Math.min(9.99, item.change + (Math.random() - 0.5) * 0.08));
+        $$(`.ticker-item[data-symbol="${item.symbol}"]`).forEach((node) => {
+          node.querySelector(".ticker-price").textContent = money(item.price);
+          const change = node.querySelector(".ticker-change");
+          change.textContent = `${item.change >= 0 ? "+" : ""}${item.change.toFixed(2)}%`;
+          change.classList.toggle("up", item.change >= 0);
+          change.classList.toggle("down", item.change < 0);
+        });
+      });
+    }
+
+    const timeframes = {
+      "1D": { points: 86, volatility: 0.0045 },
+      "1W": { points: 96, volatility: 0.011 },
+      "1M": { points: 110, volatility: 0.019 }
+    };
+
+    const canvas = $("#chartCanvas");
+    const ctx = canvas.getContext("2d");
+    const chartWrap = $("#chartWrap");
+    const tooltip = $("#chartTooltip");
+    let activeTimeframe = "1D";
+    let candles = [];
+    let chartWidth = 0;
+    let chartHeight = 0;
+    let chartProgress = 1;
+    let hoverIndex = -1;
+    let animationFrame = null;
+    let lastChartUpdate = 0;
+
+    function generateCandles(points, volatility) {
+      let price = 520 + Math.random() * 24;
+      const now = Date.now();
+      const data = [];
+      for (let i = 0; i < points; i += 1) {
+        const open = price;
+        const close = Math.max(1, open + (Math.random() - 0.47) * volatility * price);
+        const high = Math.max(open, close) + Math.random() * volatility * price * 0.55;
+        const low = Math.min(open, close) - Math.random() * volatility * price * 0.55;
+        data.push({ open, close, high, low, time: now - (points - i) * 60000 });
+        price = close;
+      }
+      return data;
+    }
+
+    function chartLayout() {
+      const left = 8;
+      const right = 54;
+      const top = 14;
+      const bottom = 22;
+      const width = Math.max(1, chartWidth - left - right);
+      const height = Math.max(1, chartHeight - top - bottom);
+      const step = width / Math.max(1, candles.length);
+      return { left, right, top, bottom, width, height, step };
+    }
+
+    function resizeChart() {
+      const rect = chartWrap.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const dpr = window.devicePixelRatio || 1;
+      chartWidth = rect.width;
+      chartHeight = rect.height;
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawChart();
+    }
+
+    function drawChart() {
+      if (!chartWidth || !chartHeight || !candles.length) return;
+      ctx.clearRect(0, 0, chartWidth, chartHeight);
+      const { left, top, width, height, step } = chartLayout();
+      const visible = Math.max(1, Math.floor(candles.length * chartProgress));
+      const slice = candles.slice(0, visible);
+      let min = Math.min(...slice.map((candle) => candle.low));
+      let max = Math.max(...slice.map((candle) => candle.high));
+      const padding = (max - min) * 0.12 || 1;
+      min -= padding;
+      max += padding;
+      const y = (value) => top + ((max - value) / (max - min)) * height;
+      const x = (index) => left + index * step + step / 2;
+
+      ctx.font = "9px 'JetBrains Mono', monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      for (let i = 0; i <= 4; i += 1) {
+        const lineY = top + (height / 4) * i;
+        ctx.strokeStyle = "rgba(255,255,255,0.045)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(left, lineY);
+        ctx.lineTo(left + width, lineY);
+        ctx.stroke();
+        const price = max - ((max - min) / 4) * i;
+        ctx.fillStyle = "rgba(148,163,184,0.42)";
+        ctx.fillText(money(price), left + width + 8, lineY);
+      }
+
+      const areaGradient = ctx.createLinearGradient(0, top, 0, top + height);
+      areaGradient.addColorStop(0, "rgba(16,185,129,0.20)");
+      areaGradient.addColorStop(1, "rgba(16,185,129,0)");
+      ctx.beginPath();
+      ctx.moveTo(x(0), y(slice[0].close));
+      slice.forEach((candle, index) => ctx.lineTo(x(index), y(candle.close)));
+      ctx.lineTo(x(slice.length - 1), top + height);
+      ctx.lineTo(x(0), top + height);
+      ctx.closePath();
+      ctx.fillStyle = areaGradient;
+      ctx.fill();
+
+      ctx.beginPath();
+      slice.forEach((candle, index) => {
+        if (index === 0) ctx.moveTo(x(index), y(candle.close));
+        else ctx.lineTo(x(index), y(candle.close));
+      });
+      ctx.strokeStyle = "rgba(52,211,153,0.9)";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      const bodyWidth = Math.max(2, Math.min(7, step * 0.52));
+      slice.forEach((candle, index) => {
+        const up = candle.close >= candle.open;
+        const color = up ? "#10b981" : "#f43f5e";
+        const centerX = x(index);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(centerX, y(candle.high));
+        ctx.lineTo(centerX, y(candle.low));
+        ctx.stroke();
+        const bodyTop = y(Math.max(candle.open, candle.close));
+        const bodyBottom = y(Math.min(candle.open, candle.close));
+        ctx.fillStyle = up ? "rgba(16,185,129,0.75)" : "rgba(244,63,94,0.75)";
+        ctx.fillRect(centerX - bodyWidth / 2, bodyTop, bodyWidth, Math.max(1, bodyBottom - bodyTop));
+      });
+
+      const last = slice[slice.length - 1];
+      const lastY = y(last.close);
+      ctx.setLineDash([3, 4]);
+      ctx.strokeStyle = "rgba(16,185,129,0.35)";
+      ctx.beginPath();
+      ctx.moveTo(left, lastY);
+      ctx.lineTo(left + width, lastY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#10b981";
+      ctx.beginPath();
+      ctx.arc(x(slice.length - 1), lastY, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (hoverIndex >= 0 && hoverIndex < slice.length) {
+        const candle = slice[hoverIndex];
+        const crossX = x(hoverIndex);
+        ctx.setLineDash([2, 4]);
+        ctx.strokeStyle = "rgba(226,232,240,0.22)";
+        ctx.beginPath();
+        ctx.moveTo(crossX, top);
+        ctx.lineTo(crossX, top + height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(left, y(candle.close));
+        ctx.lineTo(left + width, y(candle.close));
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      updateStats(last);
+    }
+
+    function updateStats(candle) {
+      if (!candle) return;
+      $("#statOpen").textContent = money(candle.open);
+      $("#statHigh").textContent = money(candle.high);
+      $("#statLow").textContent = money(candle.low);
+      $("#statClose").textContent = money(candle.close);
+      $("#chartPrice").textContent = money(candle.close);
+      const change = ((candle.close - candles[0].open) / candles[0].open) * 100;
+      const changeNode = $("#chartChange");
+      changeNode.textContent = `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`;
+      changeNode.classList.toggle("up", change >= 0);
+      changeNode.classList.toggle("down", change < 0);
+    }
+
+    function animateChart() {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      chartProgress = 0;
+      const start = performance.now();
+      const duration = 620;
+      function frame(now) {
+        const progress = Math.min(1, (now - start) / duration);
+        chartProgress = 1 - Math.pow(1 - progress, 3);
+        drawChart();
+        if (progress < 1) animationFrame = requestAnimationFrame(frame);
+      }
+      animationFrame = requestAnimationFrame(frame);
+    }
+
+    function loadTimeframe(timeframe) {
+      activeTimeframe = timeframe;
+      const config = timeframes[timeframe];
+      candles = generateCandles(config.points, config.volatility);
+      $$(".timeframe-btn").forEach((button) => {
+        const active = button.dataset.timeframe === timeframe;
+        button.classList.toggle("bg-white/[0.07]", active);
+        button.classList.toggle("text-emerald-300", active);
+        button.classList.toggle("text-slate-500", !active);
+      });
+      animateChart();
+    }
+
+    function showTooltip(index, clientX, clientY) {
+      if (index < 0 || index >= candles.length) {
+        tooltip.classList.remove("visible");
+        return;
+      }
+      const candle = candles[index];
+      const rect = chartWrap.getBoundingClientRect();
+      const date = new Date(candle.time);
+      tooltip.innerHTML = `
+        <div style="color:#64748b">${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</div>
+        <div>O <span style="color:#e2e8f0">${money(candle.open)}</span></div>
+        <div>H <span style="color:#34d399">${money(candle.high)}</span></div>
+        <div>L <span style="color:#fb7185">${money(candle.low)}</span></div>
+        <div>C <span style="color:#e2e8f0">${money(candle.close)}</span></div>`;
+      const localX = clientX - rect.left;
+      const localY = clientY - rect.top;
+      tooltip.style.left = `${Math.min(Math.max(8, localX + 14), rect.width - 130)}px`;
+      tooltip.style.top = `${Math.min(Math.max(8, localY - 70), rect.height - 92)}px`;
+      tooltip.classList.add("visible");
+    }
+
+    function onChartMove(event) {
+      if (!candles.length) return;
+      const rect = canvas.getBoundingClientRect();
+      const localX = event.clientX - rect.left;
+      const { left, step } = chartLayout();
+      const index = Math.floor((localX - left) / step);
+      if (index >= 0 && index < Math.floor(candles.length * chartProgress)) {
+        hoverIndex = index;
+        showTooltip(index, event.clientX, event.clientY);
+        drawChart();
+      } else {
+        hoverIndex = -1;
+        tooltip.classList.remove("visible");
+        drawChart();
+      }
+    }
+
+    function onChartLeave() {
+      hoverIndex = -1;
+      tooltip.classList.remove("visible");
+      drawChart();
+    }
+
+    function liveChartTick() {
+      if (!candles.length) return;
+      const last = candles[candles.length - 1];
+      const drift = (Math.random() - 0.48) * last.close * 0.0012;
+      last.close = Math.max(1, last.close + drift);
+      last.high = Math.max(last.high, last.close);
+      last.low = Math.min(last.low, last.close);
+      const now = performance.now();
+      if (now - lastChartUpdate > 1200) {
+        lastChartUpdate = now;
+        drawChart();
+      }
+    }
+
+    function updateFearGreed(value) {
+      const clamped = Math.max(0, Math.min(100, value));
+      const length = Math.PI * 50;
+      $("#fngArc").style.strokeDasharray = `${length}`;
+      $("#fngArc").style.strokeDashoffset = `${length * (1 - clamped / 100)}`;
+      $("#fngNeedle").setAttribute("transform", `rotate(${-90 + (clamped / 100) * 180} 60 60)`);
+      $("#fngValue").textContent = Math.round(clamped);
+      const label = clamped >= 75 ? "Extreme Greed" : clamped >= 55 ? "Greed" : clamped >= 45 ? "Neutral" : clamped >= 25 ? "Fear" : "Extreme Fear";
+      $("#fngLabel").textContent = label;
+      $("#fngLabel").classList.toggle("text-emerald-400", clamped >= 55);
+      $("#fngLabel").classList.toggle("text-amber-400", clamped >= 45 && clamped < 55);
+      $("#fngLabel").classList.toggle("text-rose-400", clamped < 45);
+      return clamped;
+    }
+
+    let fearGreed = 68;
+    function renderVolumeBars() {
+      const container = $("#volumeBars");
+      container.innerHTML = "";
+      for (let i = 0; i < 14; i += 1) {
+        const bar = document.createElement("span");
+        bar.className = "flex-1 rounded-sm bg-emerald-500/20";
+        bar.style.height = `${18 + Math.random() * 82}%`;
+        if (i > 10) bar.className = "flex-1 rounded-sm bg-emerald-500/40";
+        container.appendChild(bar);
+      }
+    }
+
+    function setTab(tab) {
+      const signin = tab === "signin";
+      $("#tabSignIn").classList.toggle("tab-active", signin);
+      $("#tabSignIn").classList.toggle("text-slate-500", !signin);
+      $("#tabSignIn").setAttribute("aria-selected", String(signin));
+      $("#tabRegister").classList.toggle("tab-active", !signin);
+      $("#tabRegister").classList.toggle("text-slate-500", signin);
+      $("#tabRegister").setAttribute("aria-selected", String(!signin));
+      $("#signinPanel").classList.toggle("hidden", !signin);
+      $("#registerPanel").classList.toggle("hidden", signin);
+    }
+
+    function setPasswordVisibility(button) {
+      const input = document.getElementById(button.dataset.togglePassword);
+      if (!input) return;
+      const visible = input.type === "password";
+      input.type = visible ? "text" : "password";
+      button.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+      button.innerHTML = `<i data-lucide="${visible ? "eye-off" : "eye"}"></i>`;
+      lucide.createIcons();
+    }
+
+    let toastTimer = null;
+    function showToast(message, tone = "success") {
+      const toast = $("#toast");
+      $("#toastText").textContent = message;
+      $("#toastIcon").className = tone === "error" ? "text-rose-400" : tone === "info" ? "text-sky-400" : "text-emerald-400";
+      $("#toastIcon").innerHTML = `<i data-lucide="${tone === "error" ? "alert-circle" : tone === "info" ? "info" : "check-circle-2"}" class="h-4 w-4"></i>`;
+      lucide.createIcons();
+      toast.classList.remove("hidden");
+      toast.classList.add("flex");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add("hidden");
+        toast.classList.remove("flex");
+      }, 3400);
+    }
+
+    function updateStrength(value) {
+      const checks = [
+        value.length >= 12,
+        /[a-z]/.test(value) && /[A-Z]/.test(value),
+        /\d/.test(value),
+        /[^A-Za-z0-9]/.test(value)
+      ];
+      const score = checks.filter(Boolean).length;
+      const bar = $("#strengthBar");
+      const label = $("#strengthLabel");
+      const config = [
+        { width: "0%", color: "#f43f5e", text: "—" },
+        { width: "25%", color: "#f43f5e", text: "Weak" },
+        { width: "50%", color: "#f59e0b", text: "Fair" },
+        { width: "75%", color: "#38bdf8", text: "Good" },
+        { width: "100%", color: "#10b981", text: "Strong" }
+      ];
+      const state = config[score];
+      bar.style.width = state.width;
+      bar.style.backgroundColor = state.color;
+      label.textContent = state.text;
+      label.style.color = state.color;
+    }
+
+    let otpMode = "signin";
+    let otpSeconds = 30;
+    let otpTimerId = null;
+
+    function resetOtpInputs() {
+      $$(".otp-input").forEach((input) => {
+        input.value = "";
+        input.classList.remove("filled");
+      });
+      $("#otpVerify").disabled = true;
+      $("#otpStep").classList.remove("hidden");
+      $("#otpSuccess").classList.add("hidden");
+      $("#otpVerifyLabel").textContent = otpMode === "register" ? "Verify & Submit Request" : "Verify & Enter Terminal";
+    }
+
+    function startOtpTimer() {
+      clearInterval(otpTimerId);
+      otpSeconds = 30;
+      $("#otpTimer").textContent = "Expires in 00:30";
+      $("#otpTimer").classList.remove("text-rose-400");
+      otpTimerId = setInterval(() => {
+        otpSeconds -= 1;
+        if (otpSeconds <= 0) {
+          clearInterval(otpTimerId);
+          $("#otpTimer").textContent = "Code expired";
+          $("#otpTimer").classList.add("text-rose-400");
+          return;
+        }
+        $("#otpTimer").textContent = `Expires in 00:${String(otpSeconds).padStart(2, "0")}`;
+      }, 1000);
+    }
+
+    function openOtp(mode) {
+      otpMode = mode;
+      resetOtpInputs();
+      $("#otpModal").classList.remove("hidden");
+      $("#otpModal").classList.add("flex");
+      document.body.classList.add("modal-open");
+      startOtpTimer();
+      setTimeout(() => $$(".otp-input")[0]?.focus(), 80);
+    }
+
+    function closeOtp() {
+      $("#otpModal").classList.add("hidden");
+      $("#otpModal").classList.remove("flex");
+      document.body.classList.remove("modal-open");
+      clearInterval(otpTimerId);
+    }
+
+    function otpValue() {
+      return $$(".otp-input").map((input) => input.value).join("");
+    }
+
+    function refreshOtpState() {
+      const value = otpValue();
+      $$(".otp-input").forEach((input) => input.classList.toggle("filled", Boolean(input.value)));
+      $("#otpVerify").disabled = value.length !== 6;
+    }
+
+    function verifyOtp() {
+      if (otpValue().length !== 6) return;
+      const button = $("#otpVerify");
+      const label = $("#otpVerifyLabel");
+      const original = label.textContent;
+      button.disabled = true;
+      label.textContent = "Verifying...";
+      clearInterval(otpTimerId);
+      setTimeout(() => {
+        $("#otpStep").classList.add("hidden");
+        $("#otpSuccess").classList.remove("hidden");
+        const register = otpMode === "register";
+        $("#otpSuccessTitle").textContent = register ? "Request submitted" : "Access granted";
+        $("#otpSuccessText").textContent = register
+          ? "Your application is under review. Our access team will verify your account shortly."
+          : "Welcome to MTrade. Your terminal is ready.";
+        label.textContent = original;
+      }, 900);
+    }
+
+    $("#tickerTrack").addEventListener("animationiteration", () => {});
+    $("#tabSignIn").addEventListener("click", () => setTab("signin"));
+    $("#tabRegister").addEventListener("click", () => setTab("register"));
+
+    $$("[data-toggle-password]").forEach((button) => {
+      button.addEventListener("click", () => setPasswordVisibility(button));
+    });
+
+    $("#demoFill").addEventListener("click", () => {
+      setTab("signin");
+      $("#signinEmail").value = "demo@mtrade.io";
+      $("#signinPassword").value = "DemoTrader#2026";
+      $("#rememberDevice").checked = true;
+      showToast("Demo credentials loaded. Press Enter Terminal.", "info");
+    });
+
+    $("#signinForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const email = $("#signinEmail").value.trim();
+      const password = $("#signinPassword").value;
+      if (!email || !password) {
+        showToast("Enter your email and password to continue.", "error");
+        return;
+      }
+      openOtp("signin");
+    });
+
+    $("#registerForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const name = $("#registerName").value.trim();
+      const email = $("#registerEmail").value.trim();
+      const password = $("#registerPassword").value;
+      const confirm = $("#registerPasswordConfirm").value;
+      if (!name || !email || !password) {
+        showToast("Complete all fields to open your account.", "error");
+        return;
+      }
+      if (password.length < 12) {
+        showToast("Use a password with at least 12 characters.", "error");
+        return;
+      }
+      if (password !== confirm) {
+        showToast("Passwords do not match.", "error");
+        return;
+      }
+      if (!$("#registerTerms").checked) {
+        showToast("Accept the terms to continue.", "error");
+        return;
+      }
+      openOtp("register");
+    });
+
+    $("#registerPassword").addEventListener("input", (event) => updateStrength(event.target.value));
+
+    $$(".otp-input").forEach((input, index, inputs) => {
+      input.addEventListener("input", () => {
+        input.value = input.value.replace(/\D/g, "").slice(0, 1);
+        if (input.value && index < inputs.length - 1) inputs[index + 1].focus();
+        refreshOtpState();
+      });
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Backspace" && !input.value && index > 0) {
+          inputs[index - 1].focus();
+          inputs[index - 1].value = "";
+          refreshOtpState();
+        }
+        if (event.key === "Enter" && otpValue().length === 6) verifyOtp();
+      });
+      input.addEventListener("paste", (event) => {
+        const digits = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 6);
+        if (!digits) return;
+        event.preventDefault();
+        digits.split("").forEach((digit, digitIndex) => {
+          if (inputs[digitIndex]) inputs[digitIndex].value = digit;
+        });
+        refreshOtpState();
+        inputs[Math.min(digits.length, inputs.length - 1)].focus();
+      });
+    });
+
+    $("#otpVerify").addEventListener("click", verifyOtp);
+    $("#otpClose").addEventListener("click", closeOtp);
+    $("#otpCancel").addEventListener("click", closeOtp);
+    $("#otpBackdrop").addEventListener("click", closeOtp);
+    $("#otpResend").addEventListener("click", () => {
+      resetOtpInputs();
+      startOtpTimer();
+      showToast("A new verification code has been sent.", "info");
+      $$(".otp-input")[0]?.focus();
+    });
+    $("#otpDone").addEventListener("click", () => {
+      closeOtp();
+      if (otpMode === "register") {
+        showToast("Account request submitted for review.", "success");
+        setTab("signin");
+      } else {
+        showToast("Access granted. Welcome to MTrade.", "success");
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !$("#otpModal").classList.contains("hidden")) closeOtp();
+    });
+
+    $$("[data-sso]").forEach((button) => {
+      button.addEventListener("click", () => {
+        showToast(`Connecting to ${button.dataset.sso} SSO...`, "info");
+        setTimeout(() => showToast(`${button.dataset.sso} SSO is simulated in this demo.`, "info"), 1200);
+      });
+    });
+
+    $$("[data-passkey]").forEach((button) => {
+      button.addEventListener("click", () => {
+        showToast("Waiting for biometric verification...", "info");
+        setTimeout(() => showToast("Passkey verified. Open the terminal to continue.", "success"), 1400);
+      });
+    });
+
+    $$("[data-forgot]").forEach((button) => {
+      button.addEventListener("click", () => showToast("Password reset is simulated in this demo.", "info"));
+    });
+
+    $$("[data-terms]").forEach((button) => {
+      button.addEventListener("click", () => showToast("Terms and privacy documents open in the full app.", "info"));
+    });
+
+    function updateClock() {
+      const now = new Date();
+      $("#marketClock").textContent = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+    }
+
+    function init() {
+      renderTicker();
+      renderVolumeBars();
+      loadTimeframe("1D");
+      updateFearGreed(fearGreed);
+      updateClock();
+      lucide.createIcons();
+      resizeChart();
+    }
+
+    window.addEventListener("load", init);
+    window.addEventListener("resize", () => {
+      clearTimeout(window.__chartResize);
+      window.__chartResize = setTimeout(resizeChart, 120);
+    });
+
+    canvas.addEventListener("mousemove", onChartMove);
+    canvas.addEventListener("mouseleave", onChartLeave);
+
+    $$(".timeframe-btn").forEach((button) => {
+      button.addEventListener("click", () => loadTimeframe(button.dataset.timeframe));
+    });
+
+    setInterval(updateTicker, 2200);
+    setInterval(liveChartTick, 1400);
+    setInterval(updateClock, 30000);
+    setInterval(() => {
+      fearGreed = updateFearGreed(fearGreed + (Math.random() - 0.5) * 5);
+    }, 9000);
+  </script>
+</body>
+</html>

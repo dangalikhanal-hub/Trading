@@ -1,5 +1,10 @@
 # Trading
 
+The new [Practice Mode workspace](docs/practice-mode.md) is available at
+`/dashboard/practice`. Apply the included Prisma migration before using it.
+It supports public Coinbase market data, candlesticks/drawings, and a dedicated
+virtual USD paper ledger; conditional execution runs while the workspace is open.
+
 This repository contains the TradeVision Pro trading dashboard and a standalone
 static trading-terminal prototype.
 

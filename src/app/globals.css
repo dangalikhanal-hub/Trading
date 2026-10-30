@@ -762,7 +762,7 @@ body {
   }
 }
 
-/* TradeVision workspace */
+/* MTrade workspace */
 .tv-shell { --tv-bg:#0c0e12; --tv-panel:#14171d; --tv-border:#262930; --tv-muted:#9297a5; --tv-mint:#a3e8c9; min-height:100vh; background:var(--tv-bg); color:#eeeff4; font-family:var(--font-geist-sans),Arial,sans-serif; font-size:14px; }
 .tv-shell *, .tv-shell *::before, .tv-shell *::after { box-sizing:border-box; }
 .tv-shell button,.tv-shell a,.tv-shell input { -webkit-tap-highlight-color:transparent; }

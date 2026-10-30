@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { WatchlistAction } from "@/lib/watchlists";
+import { quoteIsFresh, type Quote } from "@/lib/market/types";
 
 interface SavedList { id: string; name: string; items: { symbol: string; assetType: string }[] }
 
@@ -11,7 +12,7 @@ async function readLists(): Promise<SavedList[]> {
   return (await response.json()).watchlists;
 }
 
-export default function SavedWatchlists({ onOpenDemo }: { onOpenDemo: (symbol: string) => void }) {
+export default function SavedWatchlists({ onOpenDemo, quotes, onOpenLive }: { onOpenDemo: (symbol: string) => void; quotes?: Record<string, Quote>; onOpenLive?: (symbol: string) => void }) {
   const [lists, setLists] = useState<SavedList[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -62,7 +63,7 @@ export default function SavedWatchlists({ onOpenDemo }: { onOpenDemo: (symbol: s
   const visible = selected?.items.filter(item => item.symbol.toLowerCase().includes(search.toLowerCase())) ?? [];
   return <section className="tv-card tv-saved-watchlists" id="saved-watchlists" aria-labelledby="saved-watchlists-heading" aria-busy={busy || loading}>
     <div className="tv-panel-heading"><h2 id="saved-watchlists-heading">Saved watchlists</h2><span className="tv-chip">PAPER TRADING</span></div>
-    <p className="tv-fine-print">Saved to your account. Live prices, changes, and volume are unavailable until a market-data provider is connected.</p>
+    <p className="tv-fine-print">{onOpenLive ? "Saved to your account. Coinbase USD quotes refresh every 10s for BTC, ETH, and SOL. Unsupported symbols show no quote." : "Saved to your account. Open the practice terminal for supported live market quotes."}</p>
     {loading && <p role="status">Loading saved watchlists...</p>}
     {error && <div className="tv-error" role="alert">{error}<button disabled={busy} onClick={() => void refresh()}>Retry load</button></div>}
     <p role="status" className="tv-fine-print">{notice}</p>
@@ -85,10 +86,16 @@ export default function SavedWatchlists({ onOpenDemo }: { onOpenDemo: (symbol: s
           <button className="tv-button tv-primary" disabled={!symbol.trim() || selected.items.length >= 100}>Add symbol</button>
         </form>
         <label htmlFor="saved-symbol-search">Search saved symbols</label><input id="saved-symbol-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Filter this watchlist" />
-        <div className="tv-saved-table"><table><caption>{selected.name} · quotes unavailable</caption><thead><tr><th scope="col">Symbol</th><th scope="col">Asset type</th><th scope="col">Actions</th></tr></thead><tbody>{visible.map(item => <tr key={item.symbol}><th scope="row">{item.symbol}</th><td>{item.assetType}</td><td>
-          {["BTC", "ETH", "SOL", "NEPSE"].includes(item.symbol) && <button className="tv-button" onClick={() => onOpenDemo(item.symbol)}>Open illustrative chart</button>}
+        <div className="tv-saved-table"><table><caption>{selected.name}{onOpenLive ? " · REST-polled market data" : " · saved symbols"}</caption><thead><tr><th scope="col">Symbol</th><th scope="col">Asset type</th>{onOpenLive && <><th scope="col">Last USD</th><th scope="col">Change</th><th scope="col">Change %</th></>}<th scope="col">Actions</th></tr></thead><tbody>{visible.map(item => {
+          const normalized = item.symbol.replace(/\//g, "-");
+          const marketSymbol = ["BTC", "ETH", "SOL"].includes(normalized) ? `${normalized}-USD` : normalized;
+          const quote = quotes?.[marketSymbol];
+          const fresh = quote && quoteIsFresh(quote);
+          return <tr key={item.symbol}><th scope="row">{item.symbol}</th><td>{item.assetType}</td>{onOpenLive && <><td>{fresh ? quote.price : "Unavailable"}</td><td>{fresh ? quote.change : "—"}</td><td>{fresh ? `${quote.changePercent}%` : "—"}</td></>}<td>
+          {onOpenLive && ["BTC-USD", "ETH-USD", "SOL-USD"].includes(marketSymbol) && <button className="tv-button" onClick={() => onOpenLive(marketSymbol)}>Open practice chart</button>}
+          {!onOpenLive && ["BTC", "ETH", "SOL", "NEPSE"].includes(item.symbol) && <button className="tv-button" onClick={() => onOpenDemo(item.symbol)}>Open illustrative chart</button>}
           <button className="tv-button" aria-label={`Remove ${item.symbol}`} onClick={() => void change({ action: "remove", watchlistId: selected.id, symbol: item.symbol })}>Remove</button>
-        </td></tr>)}</tbody></table></div>
+        </td></tr>; })}</tbody></table></div>
         {visible.length === 0 && <p className="tv-empty">{selected.items.length ? "No matching saved symbols." : "This watchlist is empty. Add a symbol above."}</p>}
         <p className="tv-fine-print">Symbol storage does not verify provider coverage. Maximum 20 watchlists, 100 symbols per list.</p>
       </>}

@@ -135,7 +135,7 @@ export default function DashboardPage() {
           const index = markets.findIndex(item => item.symbol === symbol);
           if (index >= 0) { setSelected(index); setPreview(""); document.getElementById("markets")?.scrollIntoView({ behavior: "smooth" }); }
         }} />
-        <footer className="tv-footer"><span>TradeVision Pro <span>·</span> Built for your learning curve.</span><span><ShieldCheck size={13} /> Paper trading only</span></footer>
+        <footer className="tv-footer"><span>MTrade <span>·</span> Built for your learning curve.</span><span><ShieldCheck size={13} /> Paper trading only</span></footer>
       </div>
     </div>
   );

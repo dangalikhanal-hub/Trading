@@ -7,6 +7,7 @@ export default function Home() {
       <Link href="/auth/login" className="px-6 py-2 bg-blue-600 text-white rounded-full font-medium">
         Go to Login
       </Link>
+      <Link href="/demo" className="mt-5 text-blue-600 underline">Preview the accounts dashboard</Link>
     </div>
   );
 }

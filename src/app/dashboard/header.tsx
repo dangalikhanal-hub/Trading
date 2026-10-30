@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { ArrowUpRight, LogOut, ShieldCheck, UserCheck } from "lucide-react";
 
 export default function DashboardHeader({ role }: { role?: string }) {
+  const pathname = usePathname();
+  if (pathname === "/dashboard") return null;
   return (
     <header className="tv-header">
       <Link href="/dashboard" className="tv-brand">
